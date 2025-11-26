@@ -3,3 +3,5 @@ export * from './lib/inspector-client';
 export * from './lib/process-spawner';
 export * from './lib/debug-session';
 export * from './lib/session-manager';
+export * from './lib/breakpoint-manager';
+export * from './lib/cdp-breakpoint-operations';

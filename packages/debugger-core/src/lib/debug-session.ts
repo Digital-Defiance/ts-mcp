@@ -1,6 +1,8 @@
 import { ChildProcess } from 'child_process';
 import { InspectorClient } from './inspector-client';
 import { spawnWithInspector } from './process-spawner';
+import { BreakpointManager } from './breakpoint-manager';
+import { CdpBreakpointOperations } from './cdp-breakpoint-operations';
 
 /**
  * Breakpoint definition stored in a debug session
@@ -52,13 +54,15 @@ export class DebugSession {
   private process: ChildProcess | null = null;
   private inspector: InspectorClient | null = null;
   private state: SessionState = SessionState.STARTING;
-  private breakpoints = new Map<string, Breakpoint>();
+  private breakpointManager: BreakpointManager;
+  private cdpBreakpointOps: CdpBreakpointOperations | null = null;
   private watchedVariables = new Map<string, WatchedVariable>();
   private config: DebugSessionConfig;
 
   constructor(id: string, config: DebugSessionConfig) {
     this.id = id;
     this.config = config;
+    this.breakpointManager = new BreakpointManager();
   }
 
   /**
@@ -82,6 +86,9 @@ export class DebugSession {
       // Connect inspector client
       this.inspector = new InspectorClient(wsUrl);
       await this.inspector.connect();
+
+      // Initialize CDP breakpoint operations
+      this.cdpBreakpointOps = new CdpBreakpointOperations(this.inspector);
 
       // Enable debugging domains
       await this.inspector.send('Debugger.enable');
@@ -147,13 +154,17 @@ export class DebugSession {
    */
   async cleanup(): Promise<void> {
     // Remove all breakpoints
-    if (this.inspector && this.inspector.isConnected()) {
-      for (const breakpoint of this.breakpoints.values()) {
+    if (
+      this.cdpBreakpointOps &&
+      this.inspector &&
+      this.inspector.isConnected()
+    ) {
+      for (const breakpoint of this.breakpointManager.getAllBreakpoints()) {
         if (breakpoint.cdpBreakpointId) {
           try {
-            await this.inspector.send('Debugger.removeBreakpoint', {
-              breakpointId: breakpoint.cdpBreakpointId,
-            });
+            await this.cdpBreakpointOps.removeBreakpoint(
+              breakpoint.cdpBreakpointId,
+            );
           } catch (error) {
             // Ignore errors during cleanup
           }
@@ -174,7 +185,8 @@ export class DebugSession {
 
     this.process = null;
     this.state = SessionState.TERMINATED;
-    this.breakpoints.clear();
+    this.cdpBreakpointOps = null;
+    this.breakpointManager.clearAll();
     this.watchedVariables.clear();
   }
 
@@ -200,31 +212,109 @@ export class DebugSession {
   }
 
   /**
-   * Add a breakpoint to the session
+   * Set a breakpoint in the session
+   * Creates the breakpoint and sets it via CDP
    */
-  addBreakpoint(breakpoint: Breakpoint): void {
-    this.breakpoints.set(breakpoint.id, breakpoint);
+  async setBreakpoint(
+    file: string,
+    line: number,
+    condition?: string,
+  ): Promise<Breakpoint> {
+    if (!this.cdpBreakpointOps) {
+      throw new Error('Session not started');
+    }
+
+    // Create breakpoint in manager
+    const breakpoint = this.breakpointManager.createBreakpoint(
+      file,
+      line,
+      condition,
+    );
+
+    // Set breakpoint via CDP if enabled
+    if (breakpoint.enabled) {
+      const cdpBreakpointId =
+        await this.cdpBreakpointOps.setBreakpoint(breakpoint);
+      if (cdpBreakpointId) {
+        this.breakpointManager.updateCdpBreakpointId(
+          breakpoint.id,
+          cdpBreakpointId,
+        );
+      }
+    }
+
+    return breakpoint;
   }
 
   /**
    * Get a breakpoint by ID
    */
   getBreakpoint(id: string): Breakpoint | undefined {
-    return this.breakpoints.get(id);
+    return this.breakpointManager.getBreakpoint(id);
   }
 
   /**
    * Get all breakpoints
    */
   getAllBreakpoints(): Breakpoint[] {
-    return Array.from(this.breakpoints.values());
+    return this.breakpointManager.getAllBreakpoints();
   }
 
   /**
    * Remove a breakpoint from the session
+   * Removes from manager and from CDP
    */
-  removeBreakpoint(id: string): boolean {
-    return this.breakpoints.delete(id);
+  async removeBreakpoint(id: string): Promise<boolean> {
+    const breakpoint = this.breakpointManager.getBreakpoint(id);
+    if (!breakpoint) {
+      return false;
+    }
+
+    // Remove from CDP if it has a CDP breakpoint ID
+    if (breakpoint.cdpBreakpointId && this.cdpBreakpointOps) {
+      await this.cdpBreakpointOps.removeBreakpoint(breakpoint.cdpBreakpointId);
+    }
+
+    // Remove from manager
+    return this.breakpointManager.removeBreakpoint(id);
+  }
+
+  /**
+   * Toggle a breakpoint's enabled state
+   */
+  async toggleBreakpoint(id: string): Promise<Breakpoint | undefined> {
+    const breakpoint = this.breakpointManager.toggleBreakpoint(id);
+    if (!breakpoint || !this.cdpBreakpointOps) {
+      return breakpoint;
+    }
+
+    // If now enabled, set via CDP
+    if (breakpoint.enabled && !breakpoint.cdpBreakpointId) {
+      const cdpBreakpointId =
+        await this.cdpBreakpointOps.setBreakpoint(breakpoint);
+      if (cdpBreakpointId) {
+        this.breakpointManager.updateCdpBreakpointId(
+          breakpoint.id,
+          cdpBreakpointId,
+        );
+      }
+    }
+    // If now disabled, remove from CDP
+    else if (!breakpoint.enabled && breakpoint.cdpBreakpointId) {
+      await this.cdpBreakpointOps.removeBreakpoint(breakpoint.cdpBreakpointId);
+      this.breakpointManager.updateCdpBreakpointId(breakpoint.id, '');
+    }
+
+    return breakpoint;
+  }
+
+  /**
+   * Add a breakpoint to the session (legacy method for compatibility)
+   */
+  addBreakpoint(breakpoint: Breakpoint): void {
+    // This is a legacy method - breakpoints should be created via setBreakpoint
+    // But we keep it for backward compatibility with tests
+    this.breakpointManager.addBreakpoint(breakpoint);
   }
 
   /**
