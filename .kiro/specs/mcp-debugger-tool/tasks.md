@@ -7,43 +7,43 @@
   - Set up testing framework (Jest) with fast-check for property-based testing
   - _Requirements: 8.2, 9.1_
 
-- [ ] 2. Implement Inspector Protocol client
-  - [ ] 2.1 Create InspectorClient class with WebSocket connection management
+- [x] 2. Implement Inspector Protocol client
+  - [x] 2.1 Create InspectorClient class with WebSocket connection management
     - Implement connection to Node.js Inspector Protocol via WebSocket
     - Implement CDP message protocol with request/response handling
     - Add event listener system for CDP events
     - Implement disconnect and cleanup logic
     - _Requirements: 2.1, 8.2_
 
-  - [ ] 2.2 Write property test for Inspector client connection
+  - [x] 2.2 Write property test for Inspector client connection
     - **Property 5: Process start with inspector attachment**
     - **Validates: Requirements 2.1**
 
-  - [ ] 2.3 Implement CDP command sending with timeout handling
+  - [x] 2.3 Implement CDP command sending with timeout handling
     - Create send method that generates unique message IDs
     - Implement promise-based response handling
     - Add timeout mechanism for commands that don't respond
     - Handle CDP error responses
     - _Requirements: 8.3, 8.4_
 
-  - [ ] 2.4 Write property test for error handling
+  - [x] 2.4 Write property test for error handling
     - **Property 18: Error handling without process crash**
     - **Validates: Requirements 8.3, 8.4**
 
-- [ ] 3. Implement process spawning with inspector
-  - [ ] 3.1 Create spawnWithInspector function
+- [x] 3. Implement process spawning with inspector
+  - [x] 3.1 Create spawnWithInspector function
     - Spawn Node.js process with --inspect-brk flag
     - Parse inspector WebSocket URL from stderr
     - Handle spawn errors and timeouts
     - Return process handle and inspector URL
     - _Requirements: 2.1_
 
-  - [ ] 3.2 Add source map support configuration
+  - [x] 3.2 Add source map support configuration
     - Enable --enable-source-maps flag when spawning
     - Configure environment variables for source map support
     - _Requirements: 7.1_
 
-- [ ] 4. Implement session management
+- [-] 4. Implement session management
   - [ ] 4.1 Create DebugSession class
     - Track session ID, process, inspector client, and state
     - Implement session lifecycle (start, pause, resume, cleanup)

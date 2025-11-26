@@ -20,6 +20,8 @@
     "@nx/js": "^18.0.0",
     "@nx/node": "^18.0.0",
     "@nx/workspace": "^18.0.0",
+    "@swc/core": "^1.15.3",
+    "@swc/jest": "^0.2.39",
     "@types/jest": "^29.5.0",
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
