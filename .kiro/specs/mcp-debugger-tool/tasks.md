@@ -149,7 +149,7 @@
     - Detect and report value changes
     - _Requirements: 3.5_
 
-  - [ ] 7.7 Write property test for variable watch notification
+  - [-] 7.7 Write property test for variable watch notification
     - **Property 9: Variable watch notification**
     - **Validates: Requirements 3.5**
 
