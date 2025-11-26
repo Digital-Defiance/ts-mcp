@@ -94,6 +94,10 @@ export class DebugSession {
       await this.inspector.send('Debugger.enable');
       await this.inspector.send('Runtime.enable');
 
+      // Tell the runtime to run if it's waiting for debugger
+      // This is needed when using --inspect-brk
+      await this.inspector.send('Runtime.runIfWaitingForDebugger');
+
       // Set up event handlers
       this.inspector.on('Debugger.paused', () => {
         this.state = SessionState.PAUSED;
@@ -108,8 +112,21 @@ export class DebugSession {
         this.state = SessionState.TERMINATED;
       });
 
-      // Session starts in paused state (--inspect-brk)
-      this.state = SessionState.PAUSED;
+      // Wait for the initial pause from --inspect-brk
+      // The process should already be paused, but we need to wait for the event
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(() => {
+          // If we don't get a paused event within 1 second, assume we're paused
+          this.state = SessionState.PAUSED;
+          resolve();
+        }, 1000);
+
+        this.inspector!.once('Debugger.paused', () => {
+          clearTimeout(timeout);
+          this.state = SessionState.PAUSED;
+          resolve();
+        });
+      });
     } catch (error) {
       this.state = SessionState.TERMINATED;
       await this.cleanup();
@@ -147,6 +164,57 @@ export class DebugSession {
 
     await this.inspector.send('Debugger.resume');
     this.state = SessionState.RUNNING;
+  }
+
+  /**
+   * Step over the current line
+   * Executes the current line and pauses at the next line in the same scope
+   */
+  async stepOver(): Promise<void> {
+    if (!this.inspector) {
+      throw new Error('Session not started');
+    }
+
+    if (this.state !== SessionState.PAUSED) {
+      throw new Error(`Cannot step over in state: ${this.state}`);
+    }
+
+    await this.inspector.send('Debugger.stepOver');
+    // State will be updated by Debugger.paused event
+  }
+
+  /**
+   * Step into the current line
+   * Executes the current line and pauses at the first line inside any called function
+   */
+  async stepInto(): Promise<void> {
+    if (!this.inspector) {
+      throw new Error('Session not started');
+    }
+
+    if (this.state !== SessionState.PAUSED) {
+      throw new Error(`Cannot step into in state: ${this.state}`);
+    }
+
+    await this.inspector.send('Debugger.stepInto');
+    // State will be updated by Debugger.paused event
+  }
+
+  /**
+   * Step out of the current function
+   * Executes until the current function returns and pauses at the calling location
+   */
+  async stepOut(): Promise<void> {
+    if (!this.inspector) {
+      throw new Error('Session not started');
+    }
+
+    if (this.state !== SessionState.PAUSED) {
+      throw new Error(`Cannot step out in state: ${this.state}`);
+    }
+
+    await this.inspector.send('Debugger.stepOut');
+    // State will be updated by Debugger.paused event
   }
 
   /**

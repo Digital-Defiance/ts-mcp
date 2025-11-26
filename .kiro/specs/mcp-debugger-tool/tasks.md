@@ -92,25 +92,25 @@
     - **Property 2: Conditional breakpoint evaluation**
     - **Validates: Requirements 1.2**
 
-- [-] 6. Implement execution control operations
-  - [ ] 6.1 Implement continue operation
+- [x] 6. Implement execution control operations
+  - [x] 6.1 Implement continue operation
     - Send Debugger.resume CDP command
     - Update session state to running
     - Handle Debugger.paused events
     - _Requirements: 2.2_
 
-  - [ ] 6.2 Implement step operations
+  - [x] 6.2 Implement step operations
     - Implement step over using Debugger.stepOver
     - Implement step into using Debugger.stepInto
     - Implement step out using Debugger.stepOut
     - Update session state after each step
     - _Requirements: 2.3, 2.4, 2.5_
 
-  - [ ] 6.3 Write property test for step operations
+  - [x] 6.3 Write property test for step operations
     - **Property 6: Step operations maintain execution flow**
     - **Validates: Requirements 2.3, 2.4, 2.5**
 
-  - [ ] 6.4 Implement pause operation
+  - [x] 6.4 Implement pause operation
     - Send Debugger.pause CDP command
     - Update session state to paused
     - Capture current execution location
@@ -665,3 +665,76 @@
     - Document findings and recommendations
     - _Requirements: Long-term stability validation_
   - Ask the user if questions arise.
+
+## Docker MCP Registry and VS Code/Copilot Integration
+
+- [ ] 28. Prepare for Docker MCP Registry contribution
+  - [ ] 28.1 Review Docker MCP Registry contribution guidelines
+    - Read https://github.com/docker/mcp-registry/blob/main/CONTRIBUTING.md
+    - Understand submission requirements and format
+    - Review existing MCP server examples in the registry
+    - _Requirements: Community contribution_
+
+  - [ ] 28.2 Create MCP server package metadata
+    - Create package.json with proper metadata (name, description, keywords)
+    - Add repository, homepage, and bugs URLs
+    - Include proper licensing information (MIT)
+    - Add MCP server category tags (debugging, development-tools)
+    - _Requirements: Registry submission_
+
+  - [ ] 28.3 Write comprehensive README for registry
+    - Document installation instructions
+    - Provide usage examples with code snippets
+    - List all available tools and their parameters
+    - Include troubleshooting section
+    - Add screenshots or GIFs demonstrating usage
+    - Document system requirements (Node.js version, etc.)
+    - _Requirements: Registry submission_
+
+  - [ ] 28.4 Create MCP server configuration examples
+    - Provide example mcp.json configuration for Kiro
+    - Create configuration examples for other MCP clients
+    - Document environment variables and options
+    - Include common use case configurations
+    - _Requirements: Registry submission_
+
+  - [ ] 28.5 Prepare Docker MCP Registry submission
+    - Create registry submission PR following guidelines
+    - Include server metadata in proper format
+    - Add server to appropriate category
+    - Provide clear description and use cases
+    - _Requirements: Registry submission_
+
+- [ ] 29. VS Code and GitHub Copilot integration
+  - [ ] 29.1 Research VS Code MCP integration
+    - Investigate VS Code extension requirements for MCP
+    - Review VS Code debugging API compatibility
+    - Understand how to integrate with VS Code's debug adapter protocol
+    - _Requirements: VS Code integration_
+
+  - [ ] 29.2 Create VS Code extension (if needed)
+    - Set up VS Code extension project structure
+    - Implement MCP client for VS Code
+    - Create debug configuration provider
+    - Add commands for debugger operations
+    - _Requirements: VS Code integration_
+
+  - [ ] 29.3 Research GitHub Copilot integration
+    - Investigate GitHub Copilot extension points
+    - Understand how Copilot can use MCP servers
+    - Review Copilot's debugging assistance capabilities
+    - _Requirements: Copilot integration_
+
+  - [ ] 29.4 Document VS Code/Copilot usage
+    - Write guide for using debugger with VS Code
+    - Document Copilot integration patterns
+    - Provide example debugging workflows
+    - Include configuration examples
+    - _Requirements: VS Code/Copilot integration_
+
+  - [ ] 29.5 Test VS Code/Copilot integration
+    - Test debugger functionality in VS Code
+    - Verify Copilot can use debugging tools
+    - Test common debugging scenarios
+    - Document any limitations or issues
+    - _Requirements: VS Code/Copilot integration_
