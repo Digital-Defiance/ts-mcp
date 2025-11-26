@@ -1,4 +1,5 @@
 import { ChildProcess } from 'child_process';
+import * as path from 'path';
 import { InspectorClient } from './inspector-client';
 import { spawnWithInspector } from './process-spawner';
 import { BreakpointManager } from './breakpoint-manager';
@@ -28,6 +29,17 @@ export interface WatchedVariable {
   name: string;
   expression: string;
   lastValue?: any;
+}
+
+/**
+ * Stack frame information
+ */
+export interface StackFrame {
+  functionName: string;
+  file: string;
+  line: number;
+  column: number;
+  callFrameId: string;
 }
 
 /**
@@ -524,6 +536,47 @@ export class DebugSession {
    */
   getCurrentCallFrames(): any[] {
     return this.currentCallFrames;
+  }
+
+  /**
+   * Get the call stack with formatted stack frames
+   * Returns stack frames with function names, files (absolute paths), and line numbers
+   * Requirements: 4.1, 9.4
+   */
+  getCallStack(): StackFrame[] {
+    if (this.state !== SessionState.PAUSED) {
+      throw new Error('Process must be paused to get call stack');
+    }
+
+    if (!this.currentCallFrames || this.currentCallFrames.length === 0) {
+      return [];
+    }
+
+    return this.currentCallFrames.map((frame: any) => {
+      // Extract file path from the URL
+      // CDP returns file URLs like "file:///absolute/path/to/file.js"
+      let filePath = frame.url || '';
+
+      // Convert file:// URL to absolute path
+      if (filePath.startsWith('file://')) {
+        filePath = filePath.substring(7); // Remove 'file://'
+      }
+
+      // Ensure the path is absolute
+      // If it's not already absolute, make it absolute relative to cwd
+      if (!filePath.startsWith('/')) {
+        const path = require('path');
+        filePath = path.resolve(this.config.cwd || process.cwd(), filePath);
+      }
+
+      return {
+        functionName: frame.functionName || '(anonymous)',
+        file: filePath,
+        line: frame.location.lineNumber + 1, // CDP uses 0-indexed lines
+        column: frame.location.columnNumber,
+        callFrameId: frame.callFrameId,
+      };
+    });
   }
 
   /**

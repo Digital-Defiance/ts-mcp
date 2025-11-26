@@ -154,17 +154,17 @@
     - **Validates: Requirements 3.5**
 
 - [-] 8. Implement call stack operations
-  - [ ] 8.1 Implement call stack retrieval
+  - [x] 8.1 Implement call stack retrieval
     - Get call stack from Debugger.paused event
     - Format stack frames with function names, files, and line numbers
     - Convert all file paths to absolute paths
     - _Requirements: 4.1, 9.4_
 
-  - [ ] 8.2 Write property test for call stack absolute paths
+  - [x] 8.2 Write property test for call stack absolute paths
     - **Property 22: Call stack absolute path requirement**
     - **Validates: Requirements 9.4**
 
-  - [ ] 8.3 Implement stack frame navigation
+  - [-] 8.3 Implement stack frame navigation
     - Allow switching context to different stack frames
     - Update current frame for variable inspection
     - Ensure variable inspection uses correct frame scope
