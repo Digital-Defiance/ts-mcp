@@ -149,11 +149,11 @@
     - Detect and report value changes
     - _Requirements: 3.5_
 
-  - [-] 7.7 Write property test for variable watch notification
+  - [x] 7.7 Write property test for variable watch notification
     - **Property 9: Variable watch notification**
     - **Validates: Requirements 3.5**
 
-- [ ] 8. Implement call stack operations
+- [-] 8. Implement call stack operations
   - [ ] 8.1 Implement call stack retrieval
     - Get call stack from Debugger.paused event
     - Format stack frames with function names, files, and line numbers

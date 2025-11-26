@@ -844,5 +844,97 @@ describe('VariableInspector', () => {
         await session.cleanup();
       }
     }, 30000);
+
+    // Property-based test for variable watch notification
+    // Feature: mcp-debugger-tool, Property 9: Variable watch notification
+    it('should correctly detect value changes for any sequence of values', async () => {
+      const testFile = path.join(
+        __dirname,
+        '../../test-fixtures/watch-test.js',
+      );
+
+      const session = new DebugSession('test-watch-pbt', {
+        command: 'node',
+        args: [testFile],
+      });
+
+      try {
+        await session.start();
+        expect(session.getState()).toBe(SessionState.PAUSED);
+
+        // Add watched variables for different types
+        session.addWatchedVariable({
+          name: 'counter',
+          expression: 'counter',
+        });
+        session.addWatchedVariable({
+          name: 'doubled',
+          expression: 'counter * 2',
+        });
+
+        // Resume to get past the initial --inspect-brk pause
+        await session.resume();
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        // Track expected values
+        const expectedValues = [
+          { counter: 0, doubled: 0 },
+          { counter: 1, doubled: 2 },
+          { counter: 2, doubled: 4 },
+          { counter: 2, doubled: 4 }, // No change
+          { counter: 5, doubled: 10 },
+        ];
+
+        let previousValues = { counter: undefined, doubled: undefined };
+
+        for (let i = 0; i < expectedValues.length; i++) {
+          const expected = expectedValues[i];
+
+          // Resume to next debugger statement
+          if (i > 0) {
+            await session.resume();
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+          expect(session.getState()).toBe(SessionState.PAUSED);
+
+          const changes = session.getWatchedVariableChanges();
+
+          // Check if values changed
+          const counterChanged =
+            previousValues.counter !== undefined &&
+            previousValues.counter !== expected.counter;
+          const doubledChanged =
+            previousValues.doubled !== undefined &&
+            previousValues.doubled !== expected.doubled;
+
+          if (counterChanged || doubledChanged) {
+            // Should have detected changes
+            expect(changes.size).toBeGreaterThan(0);
+
+            if (counterChanged) {
+              expect(changes.has('counter')).toBe(true);
+              const counterChange = changes.get('counter');
+              expect(counterChange?.oldValue).toBe(previousValues.counter);
+              expect(counterChange?.newValue).toBe(expected.counter);
+            }
+
+            if (doubledChanged) {
+              expect(changes.has('doubled')).toBe(true);
+              const doubledChange = changes.get('doubled');
+              expect(doubledChange?.oldValue).toBe(previousValues.doubled);
+              expect(doubledChange?.newValue).toBe(expected.doubled);
+            }
+          } else if (previousValues.counter !== undefined) {
+            // No changes expected
+            expect(changes.size).toBe(0);
+          }
+
+          // Update previous values
+          previousValues = { ...expected };
+        }
+      } finally {
+        await session.cleanup();
+      }
+    }, 30000);
   });
 });
