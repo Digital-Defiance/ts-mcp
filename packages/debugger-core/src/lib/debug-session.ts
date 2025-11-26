@@ -81,6 +81,7 @@ export class DebugSession {
   >();
   private config: DebugSessionConfig;
   private currentCallFrames: any[] = [];
+  private currentFrameIndex: number = 0;
 
   constructor(id: string, config: DebugSessionConfig) {
     this.id = id;
@@ -128,6 +129,7 @@ export class DebugSession {
       this.inspector.on('Debugger.paused', async (params: any) => {
         this.state = SessionState.PAUSED;
         this.currentCallFrames = params?.callFrames || [];
+        this.currentFrameIndex = 0; // Reset to top frame when paused
 
         // Evaluate watched variables when paused
         if (this.watchedVariables.size > 0) {
@@ -143,6 +145,7 @@ export class DebugSession {
       this.inspector.on('Debugger.resumed', () => {
         this.state = SessionState.RUNNING;
         this.currentCallFrames = [];
+        this.currentFrameIndex = 0; // Reset frame index when resumed
       });
 
       // Handle process exit
@@ -469,7 +472,7 @@ export class DebugSession {
   /**
    * Evaluate an expression in the current execution context
    * @param expression The JavaScript expression to evaluate
-   * @param callFrameId Optional call frame ID (uses top frame if not provided)
+   * @param callFrameId Optional call frame ID (uses current frame if not provided)
    * @returns The evaluation result with type information
    */
   async evaluateExpression(
@@ -484,8 +487,10 @@ export class DebugSession {
       throw new Error('Process must be paused to evaluate expressions');
     }
 
-    // If no callFrameId provided, use the top frame
-    const frameId = callFrameId || this.currentCallFrames[0]?.callFrameId;
+    // If no callFrameId provided, use the current frame
+    const frameId =
+      callFrameId ||
+      this.currentCallFrames[this.currentFrameIndex]?.callFrameId;
     if (!frameId) {
       throw new Error('No call frames available');
     }
@@ -622,5 +627,51 @@ export class DebugSession {
    */
   clearWatchedVariableChanges(): void {
     this.watchedVariableChanges.clear();
+  }
+
+  /**
+   * Switch context to a different stack frame by index
+   * Updates the current frame for variable inspection
+   * Requirements: 4.2, 4.3
+   * @param frameIndex The index of the frame to switch to (0 = top frame)
+   */
+  switchToFrame(frameIndex: number): void {
+    if (this.state !== SessionState.PAUSED) {
+      throw new Error('Process must be paused to switch frames');
+    }
+
+    if (!this.currentCallFrames || this.currentCallFrames.length === 0) {
+      throw new Error('No call frames available');
+    }
+
+    if (frameIndex < 0 || frameIndex >= this.currentCallFrames.length) {
+      throw new Error(
+        `Frame index ${frameIndex} out of range (0-${this.currentCallFrames.length - 1})`,
+      );
+    }
+
+    this.currentFrameIndex = frameIndex;
+  }
+
+  /**
+   * Get the current frame index
+   */
+  getCurrentFrameIndex(): number {
+    return this.currentFrameIndex;
+  }
+
+  /**
+   * Get the call frame ID for the current frame
+   */
+  getCurrentCallFrameId(): string | undefined {
+    if (!this.currentCallFrames || this.currentCallFrames.length === 0) {
+      return undefined;
+    }
+
+    if (this.currentFrameIndex >= this.currentCallFrames.length) {
+      return undefined;
+    }
+
+    return this.currentCallFrames[this.currentFrameIndex]?.callFrameId;
   }
 }

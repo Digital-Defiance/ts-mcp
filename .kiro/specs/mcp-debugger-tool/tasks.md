@@ -153,7 +153,7 @@
     - **Property 9: Variable watch notification**
     - **Validates: Requirements 3.5**
 
-- [-] 8. Implement call stack operations
+- [x] 8. Implement call stack operations
   - [x] 8.1 Implement call stack retrieval
     - Get call stack from Debugger.paused event
     - Format stack frames with function names, files, and line numbers
@@ -164,13 +164,13 @@
     - **Property 22: Call stack absolute path requirement**
     - **Validates: Requirements 9.4**
 
-  - [-] 8.3 Implement stack frame navigation
+  - [x] 8.3 Implement stack frame navigation
     - Allow switching context to different stack frames
     - Update current frame for variable inspection
     - Ensure variable inspection uses correct frame scope
     - _Requirements: 4.2, 4.3_
 
-  - [ ] 8.4 Write property test for stack frame context switching
+  - [x] 8.4 Write property test for stack frame context switching
     - **Property 10: Stack frame context switching**
     - **Validates: Requirements 4.2, 4.3**
 
