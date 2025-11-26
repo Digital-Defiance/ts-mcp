@@ -92,7 +92,7 @@
     - **Property 2: Conditional breakpoint evaluation**
     - **Validates: Requirements 1.2**
 
-- [ ] 6. Implement execution control operations
+- [-] 6. Implement execution control operations
   - [ ] 6.1 Implement continue operation
     - Send Debugger.resume CDP command
     - Update session state to running
@@ -396,3 +396,272 @@
 
 - [ ] 18. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
+
+## Enterprise-Grade Enhancements
+
+- [ ] 19. Implement advanced breakpoint types
+  - [ ] 19.1 Implement logpoints (non-breaking breakpoints)
+    - Add logpoint type to breakpoint definitions
+    - Implement log message template evaluation
+    - Log to output without pausing execution
+    - Support variable interpolation in log messages
+    - _Requirements: Enhanced debugging capabilities_
+
+  - [ ] 19.2 Implement exception breakpoints
+    - Add exception breakpoint configuration
+    - Break on caught exceptions (optional)
+    - Break on uncaught exceptions
+    - Filter by exception type/message
+    - Capture exception details and stack trace
+    - _Requirements: Enhanced debugging capabilities_
+
+  - [ ] 19.3 Implement hit count breakpoints
+    - Add hit count condition to breakpoints
+    - Track breakpoint hit counts per session
+    - Support operators (==, >, >=, <, <=, %)
+    - Reset hit counts on session restart
+    - _Requirements: Enhanced debugging capabilities_
+
+  - [ ] 19.4 Implement function breakpoints
+    - Break on function entry by name
+    - Support regex patterns for function matching
+    - Handle anonymous and arrow functions
+    - _Requirements: Enhanced debugging capabilities_
+
+  - [ ] 19.5 Add MCP tools for advanced breakpoints
+    - Implement debugger_set_logpoint tool
+    - Implement debugger_set_exception_breakpoint tool
+    - Implement debugger_set_function_breakpoint tool
+    - Update debugger_set_breakpoint to support hit counts
+    - _Requirements: Enhanced debugging capabilities_
+
+- [ ] 20. Implement security and compliance features
+  - [ ] 20.1 Add authentication support
+    - Implement token-based authentication for MCP connections
+    - Support API key validation
+    - Add session token management
+    - _Requirements: Enterprise security_
+
+  - [ ] 20.2 Implement rate limiting
+    - Add rate limiting for debugging operations
+    - Configure limits per operation type
+    - Return appropriate error responses when limits exceeded
+    - Track rate limit metrics
+    - _Requirements: Enterprise security_
+
+  - [ ] 20.3 Implement sensitive data masking
+    - Detect common PII patterns (emails, SSNs, credit cards)
+    - Mask sensitive values in variable inspection
+    - Add configurable masking rules
+    - Provide opt-out for trusted environments
+    - _Requirements: Enterprise security_
+
+  - [ ] 20.4 Add session timeout enforcement
+    - Implement configurable session timeouts
+    - Auto-cleanup expired sessions
+    - Send timeout warnings before expiration
+    - _Requirements: Enterprise security_
+
+  - [ ] 20.5 Implement audit logging
+    - Log all debugging operations with timestamps
+    - Include user/session context in logs
+    - Support structured logging formats (JSON)
+    - Implement log rotation and retention policies
+    - _Requirements: Enterprise security_
+
+- [ ] 21. Implement observability and telemetry
+  - [ ] 21.1 Add structured logging
+    - Implement log levels (debug, info, warn, error)
+    - Use structured logging format (JSON)
+    - Add correlation IDs for request tracing
+    - Include context (session ID, operation type)
+    - _Requirements: Enterprise observability_
+
+  - [ ] 21.2 Implement metrics collection
+    - Track session duration and count
+    - Track breakpoint hit counts
+    - Track operation latencies
+    - Track error rates by type
+    - Expose metrics endpoint
+    - _Requirements: Enterprise observability_
+
+  - [ ] 21.3 Add health check endpoints
+    - Implement /health endpoint
+    - Implement /ready endpoint (readiness probe)
+    - Implement /live endpoint (liveness probe)
+    - Include dependency health checks
+    - _Requirements: Production readiness_
+
+  - [ ] 21.4 Implement session recording (optional)
+    - Record debugging session events
+    - Support session replay for debugging
+    - Add privacy controls for recording
+    - Implement storage management for recordings
+    - _Requirements: Advanced observability_
+
+- [ ] 22. Implement performance profiling features
+  - [ ] 22.1 Add CPU profiling support
+    - Use Profiler.start/stop CDP commands
+    - Capture CPU profile data
+    - Generate flame graphs or call trees
+    - Provide profile analysis and bottleneck detection
+    - _Requirements: Performance debugging_
+
+  - [ ] 22.2 Add memory profiling support
+    - Capture heap snapshots via HeapProfiler domain
+    - Track memory allocation over time
+    - Detect memory leaks via heap growth analysis
+    - Provide memory usage reports
+    - _Requirements: Performance debugging_
+
+  - [ ] 22.3 Implement performance timeline
+    - Record performance events during execution
+    - Track function execution times
+    - Identify slow operations
+    - Generate performance reports
+    - _Requirements: Performance debugging_
+
+  - [ ] 22.4 Add MCP tools for profiling
+    - Implement debugger_start_cpu_profile tool
+    - Implement debugger_stop_cpu_profile tool
+    - Implement debugger_take_heap_snapshot tool
+    - Implement debugger_get_performance_metrics tool
+    - _Requirements: Performance debugging_
+
+- [ ] 23. Implement production readiness features
+  - [ ] 23.1 Add graceful shutdown handling
+    - Handle SIGTERM and SIGINT signals
+    - Complete in-flight operations before shutdown
+    - Clean up all active sessions
+    - Close all connections gracefully
+    - _Requirements: Production readiness_
+
+  - [ ] 23.2 Implement circuit breakers
+    - Add circuit breakers for CDP operations
+    - Configure failure thresholds
+    - Implement automatic recovery
+    - Provide circuit breaker status monitoring
+    - _Requirements: Production readiness_
+
+  - [ ] 23.3 Add retry logic with exponential backoff
+    - Implement retry for transient failures
+    - Use exponential backoff strategy
+    - Configure max retry attempts
+    - Add jitter to prevent thundering herd
+    - _Requirements: Production readiness_
+
+  - [ ] 23.4 Implement resource limits and quotas
+    - Limit max concurrent sessions per user
+    - Limit max breakpoints per session
+    - Limit max memory usage per session
+    - Enforce timeout limits
+    - _Requirements: Production readiness_
+
+  - [ ] 23.5 Add Prometheus metrics export
+    - Export metrics in Prometheus format
+    - Include standard metrics (requests, latency, errors)
+    - Include custom debugging metrics
+    - Add metric labels for filtering
+    - _Requirements: Production readiness_
+
+- [ ] 24. Enhanced testing for enterprise features
+  - [ ] 24.1 Implement load testing
+    - Test with 100+ concurrent debug sessions
+    - Measure throughput and latency under load
+    - Identify performance bottlenecks
+    - Test resource cleanup under load
+    - _Requirements: Enterprise quality_
+
+  - [ ] 24.2 Implement chaos testing
+    - Test random process crashes
+    - Test network disconnections
+    - Test CDP protocol errors
+    - Test resource exhaustion scenarios
+    - Verify graceful degradation
+    - _Requirements: Enterprise quality_
+
+  - [ ] 24.3 Add compatibility testing
+    - Test with Node.js 16, 18, 20, 22
+    - Test with TypeScript 4.x and 5.x
+    - Test with different test frameworks
+    - Test on different operating systems
+    - _Requirements: Enterprise quality_
+
+  - [ ] 24.4 Implement security testing
+    - Test authentication and authorization
+    - Test rate limiting effectiveness
+    - Test PII masking accuracy
+    - Perform basic penetration testing
+    - Test for common vulnerabilities
+    - _Requirements: Enterprise quality_
+
+  - [ ] 24.5 Add performance benchmarks
+    - Benchmark breakpoint set/remove operations
+    - Benchmark variable inspection latency
+    - Benchmark session creation/cleanup
+    - Track performance regression in CI
+    - _Requirements: Enterprise quality_
+
+- [ ] 25. Developer experience enhancements
+  - [ ] 25.1 Add debugging configuration presets
+    - Create presets for common scenarios (Node.js app, Jest tests, etc.)
+    - Support custom preset definitions
+    - Allow preset inheritance and composition
+    - _Requirements: Enhanced DX_
+
+  - [ ] 25.2 Implement workspace-aware debugging
+    - Support monorepo debugging
+    - Auto-detect workspace structure
+    - Handle multiple package.json files
+    - Support workspace-relative paths
+    - _Requirements: Enhanced DX_
+
+  - [ ] 25.3 Add multi-target debugging support
+    - Debug multiple processes simultaneously
+    - Coordinate breakpoints across targets
+    - Aggregate logs from multiple targets
+    - Support parent-child process debugging
+    - _Requirements: Enhanced DX_
+
+  - [ ] 25.4 Implement smart breakpoint suggestions
+    - Suggest breakpoint locations based on code analysis
+    - Recommend breakpoints for common debugging scenarios
+    - Suggest conditional breakpoints based on context
+    - _Requirements: Enhanced DX_
+
+  - [ ] 25.5 Add variable formatting customization
+    - Support custom formatters for types
+    - Add pretty-printing options
+    - Support truncation and depth limits
+    - Allow user-defined display rules
+    - _Requirements: Enhanced DX_
+
+- [ ] 26. Final enterprise checkpoint
+  - Ensure all enterprise features are tested
+  - Verify security features are working correctly
+  - Confirm observability and monitoring are operational
+  - Validate production readiness
+  - Ask the user if questions arise.
+
+## Optional Long-Term Testing
+
+- [ ] 27. Implement soak testing (optional - resource intensive)
+  - [ ] 27.1 Set up long-running test environment
+    - Configure dedicated test infrastructure
+    - Set up monitoring and alerting
+    - Prepare test scenarios
+    - _Requirements: Long-term stability validation_
+
+  - [ ] 27.2 Run continuous operation tests
+    - Run continuous operation for 24+ hours
+    - Monitor for memory leaks
+    - Monitor for resource leaks
+    - Verify stability under sustained load
+    - _Requirements: Long-term stability validation_
+
+  - [ ] 27.3 Analyze and report results
+    - Collect and analyze metrics
+    - Identify any degradation patterns
+    - Document findings and recommendations
+    - _Requirements: Long-term stability validation_
+  - Ask the user if questions arise.
