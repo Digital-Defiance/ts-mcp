@@ -43,7 +43,7 @@ describe('Call Stack Operations', () => {
           expect(session.getState()).toBe(SessionState.PAUSED);
 
           // Get the call stack
-          const callStack = session.getCallStack();
+          const callStack = await session.getCallStack();
 
           // Verify we have at least one frame
           expect(callStack.length).toBeGreaterThan(0);
@@ -102,7 +102,7 @@ describe('Call Stack Operations', () => {
       expect(session.getState()).toBe(SessionState.PAUSED);
 
       // Get the call stack
-      const callStack = session.getCallStack();
+      const callStack = await session.getCallStack();
 
       // Verify we have at least one frame
       expect(callStack.length).toBeGreaterThan(0);
@@ -146,7 +146,7 @@ describe('Call Stack Operations', () => {
       expect(session.getState()).toBe(SessionState.RUNNING);
 
       // Try to get call stack while running
-      expect(() => session.getCallStack()).toThrow(
+      await expect(session.getCallStack()).rejects.toThrow(
         'Process must be paused to get call stack',
       );
     } finally {
@@ -166,7 +166,7 @@ describe('Call Stack Operations', () => {
 
       // At the initial pause, we should have call frames
       // But let's test the behavior when call frames are cleared
-      const callStack = session.getCallStack();
+      const callStack = await session.getCallStack();
 
       // Should have frames at initial pause
       expect(Array.isArray(callStack)).toBe(true);
@@ -209,7 +209,7 @@ describe('Call Stack Operations', () => {
       }
 
       // Get the call stack
-      const callStack = session.getCallStack();
+      const callStack = await session.getCallStack();
 
       // Should have multiple frames for nested calls
       expect(callStack.length).toBeGreaterThan(1);
@@ -264,7 +264,7 @@ describe('Call Stack Operations', () => {
           }
 
           // Get the call stack
-          const callStack = session.getCallStack();
+          const callStack = await session.getCallStack();
 
           // Should have multiple frames
           expect(callStack.length).toBeGreaterThan(1);
@@ -331,7 +331,7 @@ describe('Call Stack Operations', () => {
       await pausedPromise;
 
       // Get the call stack
-      const callStack = session.getCallStack();
+      const callStack = await session.getCallStack();
 
       // Try to switch to an invalid frame index (negative)
       expect(() => session.switchToFrame(-1)).toThrow('out of range');
@@ -417,7 +417,7 @@ describe('Call Stack Operations', () => {
       }
 
       // Get the call stack
-      const callStack = session.getCallStack();
+      const callStack = await session.getCallStack();
       expect(callStack.length).toBeGreaterThan(1);
 
       // Switch to a different frame

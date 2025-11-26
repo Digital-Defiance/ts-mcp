@@ -9,6 +9,7 @@ import {
   EvaluationResult,
   PropertyDescriptor,
 } from './variable-inspector';
+import { SourceMapManager } from './source-map-manager';
 
 /**
  * Breakpoint definition stored in a debug session
@@ -74,6 +75,7 @@ export class DebugSession {
   private breakpointManager: BreakpointManager;
   private cdpBreakpointOps: CdpBreakpointOperations | null = null;
   private variableInspector: VariableInspector | null = null;
+  private sourceMapManager: SourceMapManager;
   private watchedVariables = new Map<string, WatchedVariable>();
   private watchedVariableChanges = new Map<
     string,
@@ -87,6 +89,7 @@ export class DebugSession {
     this.id = id;
     this.config = config;
     this.breakpointManager = new BreakpointManager();
+    this.sourceMapManager = new SourceMapManager();
   }
 
   /**
@@ -116,6 +119,7 @@ export class DebugSession {
 
       // Initialize variable inspector
       this.variableInspector = new VariableInspector(this.inspector);
+      this.variableInspector.setSourceMapManager(this.sourceMapManager);
 
       // Enable debugging domains
       await this.inspector.send('Debugger.enable');
@@ -315,6 +319,9 @@ export class DebugSession {
     this.breakpointManager.clearAll();
     this.watchedVariables.clear();
     this.watchedVariableChanges.clear();
+
+    // Clear source map cache
+    this.sourceMapManager.clearCache();
   }
 
   /**
@@ -341,6 +348,8 @@ export class DebugSession {
   /**
    * Set a breakpoint in the session
    * Creates the breakpoint and sets it via CDP
+   * Maps TypeScript locations to JavaScript when source maps are available
+   * Requirements: 7.2
    */
   async setBreakpoint(
     file: string,
@@ -351,17 +360,42 @@ export class DebugSession {
       throw new Error('Session not started');
     }
 
-    // Create breakpoint in manager
+    // Try to map TypeScript location to JavaScript if it's a TypeScript file
+    let targetFile = file;
+    let targetLine = line;
+
+    if (file.endsWith('.ts') || file.endsWith('.tsx')) {
+      const compiledLocation = await this.sourceMapManager.mapSourceToCompiled({
+        file,
+        line,
+        column: 0,
+      });
+
+      if (compiledLocation) {
+        targetFile = compiledLocation.file;
+        targetLine = compiledLocation.line;
+      }
+    }
+
+    // Create breakpoint in manager with the original file/line
+    // This ensures the user sees the TypeScript location
     const breakpoint = this.breakpointManager.createBreakpoint(
       file,
       line,
       condition,
     );
 
-    // Set breakpoint via CDP if enabled
+    // Set breakpoint via CDP using the compiled location if enabled
     if (breakpoint.enabled) {
+      // Create a temporary breakpoint object with the compiled location for CDP
+      const cdpBreakpoint = {
+        ...breakpoint,
+        file: targetFile,
+        line: targetLine,
+      };
+
       const cdpBreakpointId =
-        await this.cdpBreakpointOps.setBreakpoint(breakpoint);
+        await this.cdpBreakpointOps.setBreakpoint(cdpBreakpoint);
       if (cdpBreakpointId) {
         this.breakpointManager.updateCdpBreakpointId(
           breakpoint.id,
@@ -563,9 +597,70 @@ export class DebugSession {
   /**
    * Get the call stack with formatted stack frames
    * Returns stack frames with function names, files (absolute paths), and line numbers
-   * Requirements: 4.1, 9.4
+   * Maps JavaScript locations back to TypeScript when source maps are available
+   * Requirements: 4.1, 9.4, 7.3
    */
-  getCallStack(): StackFrame[] {
+  async getCallStack(): Promise<StackFrame[]> {
+    if (this.state !== SessionState.PAUSED) {
+      throw new Error('Process must be paused to get call stack');
+    }
+
+    if (!this.currentCallFrames || this.currentCallFrames.length === 0) {
+      return [];
+    }
+
+    const frames: StackFrame[] = [];
+
+    for (const frame of this.currentCallFrames) {
+      // Extract file path from the URL
+      // CDP returns file URLs like "file:///absolute/path/to/file.js"
+      let filePath = frame.url || '';
+
+      // Convert file:// URL to absolute path
+      if (filePath.startsWith('file://')) {
+        filePath = filePath.substring(7); // Remove 'file://'
+      }
+
+      // Ensure the path is absolute
+      // If it's not already absolute, make it absolute relative to cwd
+      if (!filePath.startsWith('/')) {
+        filePath = path.resolve(this.config.cwd || process.cwd(), filePath);
+      }
+
+      let line = frame.location.lineNumber + 1; // CDP uses 0-indexed lines
+      let column = frame.location.columnNumber;
+
+      // Try to map back to source location if source map is available
+      const sourceLocation = await this.sourceMapManager.mapCompiledToSource({
+        file: filePath,
+        line: line,
+        column: column,
+      });
+
+      if (sourceLocation) {
+        filePath = sourceLocation.file;
+        line = sourceLocation.line;
+        column = sourceLocation.column;
+      }
+
+      frames.push({
+        functionName: frame.functionName || '(anonymous)',
+        file: filePath,
+        line: line,
+        column: column,
+        callFrameId: frame.callFrameId,
+      });
+    }
+
+    return frames;
+  }
+
+  /**
+   * Get the call stack synchronously (without source map mapping)
+   * Use getCallStack() for source map support
+   * @deprecated Use getCallStack() instead for source map support
+   */
+  getCallStackSync(): StackFrame[] {
     if (this.state !== SessionState.PAUSED) {
       throw new Error('Process must be paused to get call stack');
     }
@@ -587,7 +682,6 @@ export class DebugSession {
       // Ensure the path is absolute
       // If it's not already absolute, make it absolute relative to cwd
       if (!filePath.startsWith('/')) {
-        const path = require('path');
         filePath = path.resolve(this.config.cwd || process.cwd(), filePath);
       }
 
@@ -690,5 +784,28 @@ export class DebugSession {
     }
 
     return this.currentCallFrames[this.currentFrameIndex]?.callFrameId;
+  }
+
+  /**
+   * Get the source map manager for this session
+   */
+  getSourceMapManager(): SourceMapManager {
+    return this.sourceMapManager;
+  }
+
+  /**
+   * Map a source location to compiled location using source maps
+   * Requirements: 7.2
+   */
+  async mapSourceToCompiled(file: string, line: number, column: number = 0) {
+    return this.sourceMapManager.mapSourceToCompiled({ file, line, column });
+  }
+
+  /**
+   * Map a compiled location to source location using source maps
+   * Requirements: 7.3
+   */
+  async mapCompiledToSource(file: string, line: number, column: number = 0) {
+    return this.sourceMapManager.mapCompiledToSource({ file, line, column });
   }
 }

@@ -1,4 +1,5 @@
 import { InspectorClient } from './inspector-client';
+import { SourceMapManager } from './source-map-manager';
 
 /**
  * Result of evaluating an expression
@@ -8,6 +9,7 @@ export interface EvaluationResult {
   type: string;
   objectId?: string;
   description?: string;
+  originalName?: string; // Original TypeScript variable name if available
 }
 
 /**
@@ -20,6 +22,7 @@ export interface PropertyDescriptor {
   writable?: boolean;
   enumerable?: boolean;
   configurable?: boolean;
+  originalName?: string; // Original TypeScript property name if available
 }
 
 /**
@@ -35,7 +38,17 @@ export interface InspectionOptions {
  * Handles variable inspection and expression evaluation using CDP
  */
 export class VariableInspector {
+  private sourceMapManager: SourceMapManager | null = null;
+
   constructor(private inspector: InspectorClient) {}
+
+  /**
+   * Set the source map manager for variable name mapping
+   * Requirements: 7.4
+   */
+  setSourceMapManager(sourceMapManager: SourceMapManager): void {
+    this.sourceMapManager = sourceMapManager;
+  }
 
   /**
    * Evaluate an expression in the current execution context

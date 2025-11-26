@@ -197,30 +197,30 @@
     - Clean up resources after detection
     - _Requirements: 5.3, 5.4_
 
-- [ ] 10. Implement source map support
-  - [ ] 10.1 Implement source map loading
+- [x] 10. Implement source map support
+  - [x] 10.1 Implement source map loading
     - Detect .map files alongside JavaScript files
     - Parse source map JSON format
     - Cache loaded source maps per session
     - _Requirements: 7.1_
 
-  - [ ] 10.2 Implement location mapping
+  - [x] 10.2 Implement location mapping
     - Map TypeScript locations to JavaScript for breakpoint setting
     - Map JavaScript locations back to TypeScript when paused
     - Handle missing or invalid source maps gracefully
     - _Requirements: 7.2, 7.3_
 
-  - [ ] 10.3 Write property test for source map round-trip
+  - [x] 10.3 Write property test for source map round-trip
     - **Property 15: Source map round-trip consistency**
     - **Validates: Requirements 7.2, 7.3**
 
-  - [ ] 10.4 Implement variable name mapping
+  - [x] 10.4 Implement variable name mapping
     - Use source map names section for variable mapping
     - Display TypeScript variable names in inspection results
     - Fall back to JavaScript names if mapping unavailable
     - _Requirements: 7.4_
 
-  - [ ] 10.5 Write property test for variable name preservation
+  - [x] 10.5 Write property test for variable name preservation
     - **Property 16: Source map variable name preservation**
     - **Validates: Requirements 7.4**
 
@@ -392,6 +392,27 @@
     - Add JSDoc comments to all public APIs
     - Document CDP protocol interactions
     - Document error codes and meanings
+    - _Requirements: 9.2_
+
+  - [ ] 17.4 Create AI Agent Integration Documentation
+    - Document MCP server configuration for Kiro/Amazon Q
+    - Create workflow examples for common debugging scenarios
+    - Document tool schemas with parameter descriptions
+    - Add troubleshooting guide for AI agent integration
+    - _Requirements: 9.2_
+
+  - [ ] 17.5 Create VS Code Extension Documentation
+    - Document VS Code extension installation and setup
+    - Create debugging workflow examples for VS Code
+    - Document GitHub Copilot integration patterns
+    - Add configuration examples for different project types
+    - _Requirements: 9.2_
+
+  - [ ] 17.6 Create Tool Reference Documentation
+    - Document all 10 MCP tools with complete schemas
+    - Provide usage examples for each tool
+    - Document error codes and responses
+    - Create debugging scenario walkthroughs
     - _Requirements: 9.2_
 
 - [ ] 18. Final checkpoint - Ensure all tests pass
@@ -738,6 +759,13 @@
       - Provide symbolic information (definitions, types) for AI context
       - Document MCP tool signatures for agent mode usage
       - Create agent profiles/instructions for debugging workflows
+      - Add tool schema validation for AI agent discovery
+      - Implement context providers for debugging scenarios
+    - **Agent Profile Documentation**:
+      - Create Copilot agent instructions for debugging workflows
+      - Document tool discovery patterns for AI agents
+      - Provide debugging scenario templates
+      - Add context enrichment for AI assistance
     - **Build and Package**:
       - Compile TypeScript: `npm run compile`
       - Create VSIX package: `vsce package`
@@ -754,13 +782,15 @@
       - Provide debugging workflow examples
       - Include troubleshooting guide for common issues
       - Add animated GIFs showing debugger in action
+      - Document AI agent integration patterns
     - **Testing**:
       - Test extension activation on TypeScript/JavaScript files
       - Verify MCP server starts and communicates correctly
       - Test debugging commands from command palette
       - Validate Copilot can access debugging context
       - Test with multiple concurrent debug sessions
-    - _Requirements: VS Code/Copilot integration, LSP compliance, DAP support_
+      - Test AI agent tool discovery and usage
+    - _Requirements: VS Code/Copilot integration, LSP compliance, DAP support, AI agent compatibility_
 
 - [ ] 29. VS Code and GitHub Copilot integration
   - [ ] 29.1 Research VS Code MCP integration

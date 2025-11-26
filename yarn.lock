@@ -1376,7 +1376,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@digitaldefiance/ts-mcp-core@workspace:packages/debugger-core"
   dependencies:
+    "@types/source-map": "npm:^0.5.7"
     "@types/ws": "npm:^8.18.1"
+    source-map: "npm:^0.7.4"
     tslib: "npm:^2.3.0"
     ws: "npm:^8.18.3"
   languageName: unknown
@@ -2569,6 +2571,15 @@ __metadata:
   version: 4.0.2
   resolution: "@types/parse-json@npm:4.0.2"
   checksum: 10c0/b1b863ac34a2c2172fbe0807a1ec4d5cb684e48d422d15ec95980b81475fac4fdb3768a8b13eef39130203a7c04340fc167bae057c7ebcafd7dec9fe6c36aeb1
+  languageName: node
+  linkType: hard
+
+"@types/source-map@npm:^0.5.7":
+  version: 0.5.7
+  resolution: "@types/source-map@npm:0.5.7"
+  dependencies:
+    source-map: "npm:*"
+  checksum: 10c0/e7d67b93ab0a10e2d13800fe4310328fb4408b75631af7bc77548225dba2dc31c678d251fb7449366af4af9cf638fadb6829c5a22b760af75750ffb989f27af6
   languageName: node
   linkType: hard
 
@@ -6901,6 +6912,13 @@ __metadata:
     buffer-from: "npm:^1.0.0"
     source-map: "npm:^0.6.0"
   checksum: 10c0/a232cb02dc5c2c048460dff3ca1a4c2aa44488822028932daff99b8707c8e4f87d2535dae319d65691c905096f2c06a2517793472634efb01f8a095661b9aa93
+  languageName: node
+  linkType: hard
+
+"source-map@npm:*, source-map@npm:^0.7.4":
+  version: 0.7.6
+  resolution: "source-map@npm:0.7.6"
+  checksum: 10c0/59f6f05538539b274ba771d2e9e32f6c65451982510564438e048bc1352f019c6efcdc6dd07909b1968144941c14015c2c7d4369fb7c4d7d53ae769716dcc16c
   languageName: node
   linkType: hard
 
