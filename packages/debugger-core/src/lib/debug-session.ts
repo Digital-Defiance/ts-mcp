@@ -120,7 +120,8 @@ export class DebugSession {
         // Evaluate watched variables when paused
         if (this.watchedVariables.size > 0) {
           try {
-            await this.evaluateWatchedVariables();
+            const changes = await this.evaluateWatchedVariables();
+            this.watchedVariableChanges = changes;
           } catch (error) {
             // Ignore errors during watch evaluation
           }
@@ -281,6 +282,7 @@ export class DebugSession {
     this.cdpBreakpointOps = null;
     this.breakpointManager.clearAll();
     this.watchedVariables.clear();
+    this.watchedVariableChanges.clear();
   }
 
   /**
@@ -552,5 +554,20 @@ export class DebugSession {
     }
 
     return changes;
+  }
+
+  /**
+   * Get the latest watched variable changes from the last pause
+   * Returns a map of variable names to their old and new values
+   */
+  getWatchedVariableChanges(): Map<string, { oldValue: any; newValue: any }> {
+    return new Map(this.watchedVariableChanges);
+  }
+
+  /**
+   * Clear the watched variable changes
+   */
+  clearWatchedVariableChanges(): void {
+    this.watchedVariableChanges.clear();
   }
 }

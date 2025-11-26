@@ -1,6 +1,6 @@
 import * as fc from 'fast-check';
 import * as path from 'path';
-import { DebugSession, SessionState } from './debug-session';
+import { DebugSession, SessionState, WatchedVariable } from './debug-session';
 
 describe('VariableInspector', () => {
   // Feature: mcp-debugger-tool, Property 8: Expression evaluation correctness
@@ -564,4 +564,285 @@ describe('VariableInspector', () => {
       await session.cleanup();
     }
   }, 60000);
+
+  // Feature: mcp-debugger-tool, Property 9: Variable watch notification
+  // For any watched variable, when that variable's value changes during execution,
+  // then the MCP Server should report the change with the old and new values.
+  // Validates: Requirements 3.5
+  describe('Variable Watching', () => {
+    it('should track watched variables and detect value changes', async () => {
+      const testFile = path.join(
+        __dirname,
+        '../../test-fixtures/watch-test.js',
+      );
+
+      const session = new DebugSession('test-watch', {
+        command: 'node',
+        args: [testFile],
+      });
+
+      try {
+        await session.start();
+        expect(session.getState()).toBe(SessionState.PAUSED);
+
+        // Add a watched variable
+        const watchedVar: WatchedVariable = {
+          name: 'counter',
+          expression: 'counter',
+        };
+        session.addWatchedVariable(watchedVar);
+
+        // Verify the watched variable was added
+        const retrieved = session.getWatchedVariable('counter');
+        expect(retrieved).toBeDefined();
+        expect(retrieved?.name).toBe('counter');
+        expect(retrieved?.expression).toBe('counter');
+
+        // Resume to get past the initial --inspect-brk pause
+        await session.resume();
+
+        // Wait for the first debugger statement
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        expect(session.getState()).toBe(SessionState.PAUSED);
+
+        // At this point, counter = 0 and should be evaluated
+        let changes = session.getWatchedVariableChanges();
+        // First evaluation, no changes yet (lastValue was undefined)
+        expect(changes.size).toBe(0);
+
+        // Resume to next debugger statement
+        await session.resume();
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        expect(session.getState()).toBe(SessionState.PAUSED);
+
+        // Now counter = 1, should detect change from 0 to 1
+        changes = session.getWatchedVariableChanges();
+        expect(changes.size).toBe(1);
+        expect(changes.has('counter')).toBe(true);
+        const change1 = changes.get('counter');
+        expect(change1?.oldValue).toBe(0);
+        expect(change1?.newValue).toBe(1);
+
+        // Resume to next debugger statement
+        await session.resume();
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        expect(session.getState()).toBe(SessionState.PAUSED);
+
+        // Now counter = 2, should detect change from 1 to 2
+        changes = session.getWatchedVariableChanges();
+        expect(changes.size).toBe(1);
+        expect(changes.has('counter')).toBe(true);
+        const change2 = changes.get('counter');
+        expect(change2?.oldValue).toBe(1);
+        expect(change2?.newValue).toBe(2);
+
+        // Resume to next debugger statement
+        await session.resume();
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        expect(session.getState()).toBe(SessionState.PAUSED);
+
+        // counter = 2 (no change), should not detect any changes
+        changes = session.getWatchedVariableChanges();
+        expect(changes.size).toBe(0);
+
+        // Resume to next debugger statement
+        await session.resume();
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        expect(session.getState()).toBe(SessionState.PAUSED);
+
+        // Now counter = 5, should detect change from 2 to 5
+        changes = session.getWatchedVariableChanges();
+        expect(changes.size).toBe(1);
+        expect(changes.has('counter')).toBe(true);
+        const change3 = changes.get('counter');
+        expect(change3?.oldValue).toBe(2);
+        expect(change3?.newValue).toBe(5);
+      } finally {
+        await session.cleanup();
+      }
+    }, 30000);
+
+    it('should track multiple watched variables independently', async () => {
+      const testFile = path.join(
+        __dirname,
+        '../../test-fixtures/watch-test.js',
+      );
+
+      const session = new DebugSession('test-multi-watch', {
+        command: 'node',
+        args: [testFile],
+      });
+
+      try {
+        await session.start();
+        expect(session.getState()).toBe(SessionState.PAUSED);
+
+        // Add multiple watched variables
+        session.addWatchedVariable({
+          name: 'counter',
+          expression: 'counter',
+        });
+        session.addWatchedVariable({
+          name: 'doubled',
+          expression: 'counter * 2',
+        });
+
+        // Verify both were added
+        const allWatched = session.getAllWatchedVariables();
+        expect(allWatched.length).toBe(2);
+        expect(allWatched.map((w) => w.name)).toContain('counter');
+        expect(allWatched.map((w) => w.name)).toContain('doubled');
+
+        // Resume to get past the initial --inspect-brk pause
+        await session.resume();
+
+        // Wait for the first debugger statement
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        expect(session.getState()).toBe(SessionState.PAUSED);
+
+        // Resume to next debugger statement where counter = 1
+        await session.resume();
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        expect(session.getState()).toBe(SessionState.PAUSED);
+
+        // Both should have changed
+        const changes = session.getWatchedVariableChanges();
+        expect(changes.size).toBe(2);
+        expect(changes.has('counter')).toBe(true);
+        expect(changes.has('doubled')).toBe(true);
+
+        const counterChange = changes.get('counter');
+        expect(counterChange?.oldValue).toBe(0);
+        expect(counterChange?.newValue).toBe(1);
+
+        const doubledChange = changes.get('doubled');
+        expect(doubledChange?.oldValue).toBe(0);
+        expect(doubledChange?.newValue).toBe(2);
+      } finally {
+        await session.cleanup();
+      }
+    }, 30000);
+
+    it('should allow removing watched variables', async () => {
+      const testFile = path.join(
+        __dirname,
+        '../../test-fixtures/watch-test.js',
+      );
+
+      const session = new DebugSession('test-remove-watch', {
+        command: 'node',
+        args: [testFile],
+      });
+
+      try {
+        await session.start();
+        expect(session.getState()).toBe(SessionState.PAUSED);
+
+        // Add a watched variable
+        session.addWatchedVariable({
+          name: 'counter',
+          expression: 'counter',
+        });
+
+        // Verify it was added
+        expect(session.getWatchedVariable('counter')).toBeDefined();
+
+        // Remove it
+        const removed = session.removeWatchedVariable('counter');
+        expect(removed).toBe(true);
+
+        // Verify it was removed
+        expect(session.getWatchedVariable('counter')).toBeUndefined();
+        expect(session.getAllWatchedVariables().length).toBe(0);
+
+        // Try removing again
+        const removedAgain = session.removeWatchedVariable('counter');
+        expect(removedAgain).toBe(false);
+      } finally {
+        await session.cleanup();
+      }
+    }, 30000);
+
+    it('should handle evaluation errors gracefully for watched variables', async () => {
+      const testFile = path.join(
+        __dirname,
+        '../../test-fixtures/watch-test.js',
+      );
+
+      const session = new DebugSession('test-watch-error', {
+        command: 'node',
+        args: [testFile],
+      });
+
+      try {
+        await session.start();
+        expect(session.getState()).toBe(SessionState.PAUSED);
+
+        // Add a watched variable with an invalid expression
+        session.addWatchedVariable({
+          name: 'invalid',
+          expression: 'nonExistentVariable',
+        });
+
+        // Resume to get past the initial --inspect-brk pause
+        await session.resume();
+
+        // Wait for the first debugger statement
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        expect(session.getState()).toBe(SessionState.PAUSED);
+
+        // Should not crash, just ignore the error
+        const changes = session.getWatchedVariableChanges();
+        // The invalid variable should not appear in changes
+        expect(changes.has('invalid')).toBe(false);
+      } finally {
+        await session.cleanup();
+      }
+    }, 30000);
+
+    it('should clear watched variable changes', async () => {
+      const testFile = path.join(
+        __dirname,
+        '../../test-fixtures/watch-test.js',
+      );
+
+      const session = new DebugSession('test-clear-changes', {
+        command: 'node',
+        args: [testFile],
+      });
+
+      try {
+        await session.start();
+        expect(session.getState()).toBe(SessionState.PAUSED);
+
+        // Add a watched variable
+        session.addWatchedVariable({
+          name: 'counter',
+          expression: 'counter',
+        });
+
+        // Resume to get past the initial --inspect-brk pause
+        await session.resume();
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        // Resume to next debugger statement where counter = 1
+        await session.resume();
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        expect(session.getState()).toBe(SessionState.PAUSED);
+
+        // Should have changes
+        let changes = session.getWatchedVariableChanges();
+        expect(changes.size).toBe(1);
+
+        // Clear changes
+        session.clearWatchedVariableChanges();
+
+        // Should be empty now
+        changes = session.getWatchedVariableChanges();
+        expect(changes.size).toBe(0);
+      } finally {
+        await session.cleanup();
+      }
+    }, 30000);
+  });
 });
