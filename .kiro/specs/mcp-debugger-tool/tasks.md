@@ -116,34 +116,34 @@
     - Capture current execution location
     - _Requirements: 2.6_
 
-- [ ] 7. Implement variable inspection
-  - [ ] 7.1 Implement expression evaluation
+- [-] 7. Implement variable inspection
+  - [x] 7.1 Implement expression evaluation
     - Get current call frame from paused state
     - Use Debugger.evaluateOnCallFrame to evaluate expressions
     - Handle evaluation errors gracefully
     - Serialize results with type information
     - _Requirements: 3.4, 9.3_
 
-  - [ ] 7.2 Write property test for expression evaluation
+  - [x] 7.2 Write property test for expression evaluation
     - **Property 8: Expression evaluation correctness**
     - **Validates: Requirements 3.4**
 
-  - [ ] 7.3 Implement object inspection
+  - [x] 7.3 Implement object inspection
     - Use Runtime.getProperties to get object properties
     - Handle nested objects and arrays
     - Limit inspection depth to prevent performance issues
     - Include type information in results
     - _Requirements: 3.3, 9.3_
 
-  - [ ] 7.4 Write property test for object inspection
+  - [x] 7.4 Write property test for object inspection
     - **Property 7: Object inspection completeness**
     - **Validates: Requirements 3.3**
 
-  - [ ] 7.5 Write property test for complex object serialization
+  - [x] 7.5 Write property test for complex object serialization
     - **Property 21: Complex object serialization with type information**
     - **Validates: Requirements 9.3**
 
-  - [ ] 7.6 Implement variable watching
+  - [-] 7.6 Implement variable watching
     - Track watched variable names per session
     - Evaluate watched expressions on each pause
     - Detect and report value changes

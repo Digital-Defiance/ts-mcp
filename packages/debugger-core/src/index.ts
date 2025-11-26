@@ -5,3 +5,4 @@ export * from './lib/debug-session';
 export * from './lib/session-manager';
 export * from './lib/breakpoint-manager';
 export * from './lib/cdp-breakpoint-operations';
+export * from './lib/variable-inspector';

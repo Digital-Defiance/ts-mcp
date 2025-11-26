@@ -3,6 +3,11 @@ import { InspectorClient } from './inspector-client';
 import { spawnWithInspector } from './process-spawner';
 import { BreakpointManager } from './breakpoint-manager';
 import { CdpBreakpointOperations } from './cdp-breakpoint-operations';
+import {
+  VariableInspector,
+  EvaluationResult,
+  PropertyDescriptor,
+} from './variable-inspector';
 
 /**
  * Breakpoint definition stored in a debug session
@@ -56,8 +61,14 @@ export class DebugSession {
   private state: SessionState = SessionState.STARTING;
   private breakpointManager: BreakpointManager;
   private cdpBreakpointOps: CdpBreakpointOperations | null = null;
+  private variableInspector: VariableInspector | null = null;
   private watchedVariables = new Map<string, WatchedVariable>();
+  private watchedVariableChanges = new Map<
+    string,
+    { oldValue: any; newValue: any }
+  >();
   private config: DebugSessionConfig;
+  private currentCallFrames: any[] = [];
 
   constructor(id: string, config: DebugSessionConfig) {
     this.id = id;
@@ -90,6 +101,9 @@ export class DebugSession {
       // Initialize CDP breakpoint operations
       this.cdpBreakpointOps = new CdpBreakpointOperations(this.inspector);
 
+      // Initialize variable inspector
+      this.variableInspector = new VariableInspector(this.inspector);
+
       // Enable debugging domains
       await this.inspector.send('Debugger.enable');
       await this.inspector.send('Runtime.enable');
@@ -99,12 +113,23 @@ export class DebugSession {
       await this.inspector.send('Runtime.runIfWaitingForDebugger');
 
       // Set up event handlers
-      this.inspector.on('Debugger.paused', () => {
+      this.inspector.on('Debugger.paused', async (params: any) => {
         this.state = SessionState.PAUSED;
+        this.currentCallFrames = params?.callFrames || [];
+
+        // Evaluate watched variables when paused
+        if (this.watchedVariables.size > 0) {
+          try {
+            await this.evaluateWatchedVariables();
+          } catch (error) {
+            // Ignore errors during watch evaluation
+          }
+        }
       });
 
       this.inspector.on('Debugger.resumed', () => {
         this.state = SessionState.RUNNING;
+        this.currentCallFrames = [];
       });
 
       // Handle process exit
@@ -425,5 +450,107 @@ export class DebugSession {
    */
   isPaused(): boolean {
     return this.state === SessionState.PAUSED;
+  }
+
+  /**
+   * Evaluate an expression in the current execution context
+   * @param expression The JavaScript expression to evaluate
+   * @param callFrameId Optional call frame ID (uses top frame if not provided)
+   * @returns The evaluation result with type information
+   */
+  async evaluateExpression(
+    expression: string,
+    callFrameId?: string,
+  ): Promise<EvaluationResult> {
+    if (!this.variableInspector) {
+      throw new Error('Session not started');
+    }
+
+    if (this.state !== SessionState.PAUSED) {
+      throw new Error('Process must be paused to evaluate expressions');
+    }
+
+    // If no callFrameId provided, use the top frame
+    const frameId = callFrameId || this.currentCallFrames[0]?.callFrameId;
+    if (!frameId) {
+      throw new Error('No call frames available');
+    }
+
+    return this.variableInspector.evaluateExpression(expression, frameId);
+  }
+
+  /**
+   * Get properties of an object by its object ID
+   * @param objectId The CDP object ID
+   * @returns Array of property descriptors
+   */
+  async getObjectProperties(objectId: string): Promise<PropertyDescriptor[]> {
+    if (!this.variableInspector) {
+      throw new Error('Session not started');
+    }
+
+    if (this.state !== SessionState.PAUSED) {
+      throw new Error('Process must be paused to inspect objects');
+    }
+
+    return this.variableInspector.getObjectProperties(objectId);
+  }
+
+  /**
+   * Inspect an object with nested property resolution
+   * @param objectId The CDP object ID
+   * @param maxDepth Maximum depth to traverse (default: 2)
+   * @returns Nested object structure
+   */
+  async inspectObject(
+    objectId: string,
+    maxDepth: number = 2,
+  ): Promise<Record<string, any>> {
+    if (!this.variableInspector) {
+      throw new Error('Session not started');
+    }
+
+    if (this.state !== SessionState.PAUSED) {
+      throw new Error('Process must be paused to inspect objects');
+    }
+
+    return this.variableInspector.inspectObject(objectId, maxDepth);
+  }
+
+  /**
+   * Get the current call frames
+   */
+  getCurrentCallFrames(): any[] {
+    return this.currentCallFrames;
+  }
+
+  /**
+   * Evaluate watched variables and detect changes
+   * Should be called when the process pauses
+   */
+  async evaluateWatchedVariables(): Promise<
+    Map<string, { oldValue: any; newValue: any }>
+  > {
+    const changes = new Map<string, { oldValue: any; newValue: any }>();
+
+    for (const [name, watched] of this.watchedVariables.entries()) {
+      try {
+        const result = await this.evaluateExpression(watched.expression);
+        const newValue = result.value;
+
+        if (watched.lastValue !== undefined && watched.lastValue !== newValue) {
+          changes.set(name, {
+            oldValue: watched.lastValue,
+            newValue: newValue,
+          });
+        }
+
+        watched.lastValue = newValue;
+      } catch (error) {
+        // Ignore evaluation errors for watched variables
+      }
+    }
+
+    return changes;
   }
 }
