@@ -6,3 +6,4 @@ export * from './lib/session-manager';
 export * from './lib/breakpoint-manager';
 export * from './lib/cdp-breakpoint-operations';
 export * from './lib/variable-inspector';
+export * from './lib/hang-detector';

@@ -177,6 +177,7 @@ export class DebugSession {
 
   /**
    * Pause the running process
+   * Waits for the Debugger.paused event to ensure call frames are populated
    */
   async pause(): Promise<void> {
     if (!this.inspector) {
@@ -187,8 +188,24 @@ export class DebugSession {
       throw new Error(`Cannot pause session in state: ${this.state}`);
     }
 
+    // Send the pause command
     await this.inspector.send('Debugger.pause');
-    this.state = SessionState.PAUSED;
+
+    // Wait for the Debugger.paused event with a reasonable timeout
+    // This ensures call frames are populated before we return
+    await new Promise<void>((resolve) => {
+      const timeout = setTimeout(() => {
+        // Timeout - resolve anyway, state should be updated by event handler
+        resolve();
+      }, 500);
+
+      const handler = () => {
+        clearTimeout(timeout);
+        resolve();
+      };
+
+      this.inspector!.once('Debugger.paused', handler);
+    });
   }
 
   /**

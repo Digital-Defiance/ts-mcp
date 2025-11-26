@@ -43,6 +43,8 @@ export class InspectorClient extends EventEmitter {
 
   constructor(private wsUrl: string) {
     super();
+    // Increase max listeners to handle multiple pause/resume cycles during sampling
+    this.setMaxListeners(100);
   }
 
   /**

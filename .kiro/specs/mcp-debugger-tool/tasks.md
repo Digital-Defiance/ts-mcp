@@ -174,23 +174,23 @@
     - **Property 10: Stack frame context switching**
     - **Validates: Requirements 4.2, 4.3**
 
-- [ ] 9. Implement hang detection
-  - [ ] 9.1 Create HangDetector class
+- [x] 9. Implement hang detection
+  - [x] 9.1 Create HangDetector class
     - Start debug session with timeout
     - Implement periodic call stack sampling
     - Compare consecutive samples to detect unchanged location
     - Capture hang location and full call stack
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-  - [ ] 9.2 Write property test for timeout-based hang detection
+  - [x] 9.2 Write property test for timeout-based hang detection
     - **Property 11: Timeout-based hang detection**
     - **Validates: Requirements 5.1, 5.2**
 
-  - [ ] 9.3 Write property test for infinite loop detection
+  - [x] 9.3 Write property test for infinite loop detection
     - **Property 12: Infinite loop detection via sampling**
     - **Validates: Requirements 5.3, 5.4**
 
-  - [ ] 9.4 Implement hang detection with configurable sampling
+  - [x] 9.4 Implement hang detection with configurable sampling
     - Accept sample interval parameter
     - Track execution location history
     - Report infinite loop when location unchanged for duration
@@ -704,6 +704,63 @@
     - Add server to appropriate category
     - Provide clear description and use cases
     - _Requirements: Registry submission_
+
+  - [ ] 28.6 Create VS Code Language Server Extension for LSP/MCP Integration
+    - **Overview**: Package the MCP debugger server as a VS Code extension to enable integration with VS Code and GitHub Copilot
+    - **Architecture**: Implement Language Server Protocol (LSP) wrapper around MCP server for editor communication
+    - **Setup Extension Project**:
+      - Use Yeoman generator: `yo code` → select "New Language Server"
+      - Create client/server structure with TypeScript
+      - Configure package.json with activation events: `onLanguage:typescript`, `onLanguage:javascript`
+      - Define extension capabilities and contributes section
+    - **Implement Language Client** (client/src/extension.ts):
+      - Define ServerOptions with module path and transport (IPC/stdio)
+      - Configure LanguageClientOptions with documentSelector for target file types
+      - Set up synchronize options for configuration and file watching
+      - Implement activate() to start LanguageClient
+      - Implement deactivate() to gracefully stop client/server
+    - **Adapt MCP Server for LSP**:
+      - Implement LSP initialization handshake (initialize/initialized)
+      - Handle document synchronization (didOpen/didChange/didClose)
+      - Map MCP debugging tools to LSP custom commands (workspace/executeCommand)
+      - Implement LSP diagnostics for debugging errors
+      - Add hover providers for variable inspection
+      - Add code lens for breakpoint suggestions
+    - **Debug Adapter Protocol (DAP) Integration**:
+      - Implement DebugAdapterDescriptorFactory for custom debug adapter
+      - Create debug configuration provider for launch.json
+      - Map MCP debugging operations to DAP protocol
+      - Handle debug session lifecycle (start/stop/pause/continue)
+      - Implement breakpoint management via DAP
+    - **Copilot Integration Points**:
+      - Expose debugging context via LSP for Copilot to consume
+      - Register custom commands that Copilot agents can invoke
+      - Provide symbolic information (definitions, types) for AI context
+      - Document MCP tool signatures for agent mode usage
+      - Create agent profiles/instructions for debugging workflows
+    - **Build and Package**:
+      - Compile TypeScript: `npm run compile`
+      - Create VSIX package: `vsce package`
+      - Test locally: Install .vsix in VS Code
+      - Validate extension activation and server communication
+    - **Publish to Marketplace**:
+      - Create publisher account on VS Code Marketplace
+      - Configure publisher in package.json
+      - Publish extension: `vsce publish`
+      - Add marketplace badges and documentation
+    - **Documentation**:
+      - Write extension README with installation instructions
+      - Document configuration options and settings
+      - Provide debugging workflow examples
+      - Include troubleshooting guide for common issues
+      - Add animated GIFs showing debugger in action
+    - **Testing**:
+      - Test extension activation on TypeScript/JavaScript files
+      - Verify MCP server starts and communicates correctly
+      - Test debugging commands from command palette
+      - Validate Copilot can access debugging context
+      - Test with multiple concurrent debug sessions
+    - _Requirements: VS Code/Copilot integration, LSP compliance, DAP support_
 
 - [ ] 29. VS Code and GitHub Copilot integration
   - [ ] 29.1 Research VS Code MCP integration
