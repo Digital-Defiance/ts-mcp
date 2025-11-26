@@ -43,25 +43,25 @@
     - Configure environment variables for source map support
     - _Requirements: 7.1_
 
-- [-] 4. Implement session management
-  - [ ] 4.1 Create DebugSession class
+- [x] 4. Implement session management
+  - [x] 4.1 Create DebugSession class
     - Track session ID, process, inspector client, and state
     - Implement session lifecycle (start, pause, resume, cleanup)
     - Store breakpoints and watched variables per session
     - _Requirements: 8.2, 8.5_
 
-  - [ ] 4.2 Create SessionManager class
+  - [x] 4.2 Create SessionManager class
     - Generate unique session IDs
     - Track multiple concurrent sessions
     - Implement session isolation
     - Provide session lookup and cleanup methods
     - _Requirements: 8.5_
 
-  - [ ] 4.3 Write property test for session isolation
+  - [x] 4.3 Write property test for session isolation
     - **Property 19: Debug session isolation**
     - **Validates: Requirements 8.5**
 
-- [ ] 5. Implement breakpoint management
+- [-] 5. Implement breakpoint management
   - [ ] 5.1 Create BreakpointManager class
     - Store breakpoint definitions with file, line, and condition
     - Generate unique breakpoint identifiers
