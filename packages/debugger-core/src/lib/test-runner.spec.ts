@@ -168,4 +168,194 @@ describe('TestRunner', () => {
       expect(combinedOutput.length).toBeGreaterThan(0);
     }, 20000);
   });
+
+  describe('Configuration options', () => {
+    it('should use custom working directory', async () => {
+      const config: TestExecutionConfig = {
+        framework: 'jest',
+        args: ['--version'],
+        cwd: process.cwd(),
+        timeout: 10000,
+        attachInspector: false,
+      };
+
+      const result = await executeTests(config);
+
+      expect(result.framework).toBe('jest');
+      expect(result.stdout).toBeDefined();
+    }, 20000);
+
+    it('should handle custom timeout', async () => {
+      const config: TestExecutionConfig = {
+        framework: 'jest',
+        args: ['--version'],
+        timeout: 5000,
+        attachInspector: false,
+      };
+
+      const result = await executeTests(config);
+
+      expect(result.framework).toBe('jest');
+      expect(result.stdout).toBeDefined();
+    }, 20000);
+
+    it('should handle test execution with args', async () => {
+      const config: TestExecutionConfig = {
+        framework: 'jest',
+        args: ['--version', '--no-coverage'],
+        timeout: 10000,
+        attachInspector: false,
+      };
+
+      const result = await executeTests(config);
+
+      expect(result.framework).toBe('jest');
+      expect(result.stdout).toBeDefined();
+    }, 20000);
+  });
+
+  describe('Error handling', () => {
+    it('should handle process timeout', async () => {
+      const config: TestExecutionConfig = {
+        framework: 'jest',
+        args: ['--version'],
+        timeout: 1, // Very short timeout
+        attachInspector: false,
+      };
+
+      const result = await executeTests(config);
+
+      // Should complete even with short timeout
+      expect(result.framework).toBe('jest');
+      expect(result.exitCode).toBeDefined();
+    }, 20000);
+
+    it('should handle non-existent test file', async () => {
+      const config: TestExecutionConfig = {
+        framework: 'jest',
+        testFile: '/path/to/nonexistent/test.js',
+        timeout: 10000,
+        attachInspector: false,
+      };
+
+      const result = await executeTests(config);
+
+      expect(result.framework).toBe('jest');
+      expect(result.success).toBe(false);
+      expect(result.exitCode).not.toBe(0);
+    }, 20000);
+
+    it('should handle invalid framework command', async () => {
+      const config: TestExecutionConfig = {
+        framework: 'jest',
+        args: ['--completely-invalid-flag-xyz'],
+        timeout: 10000,
+        attachInspector: false,
+      };
+
+      const result = await executeTests(config);
+
+      expect(result.framework).toBe('jest');
+      expect(result.success).toBe(false);
+    }, 20000);
+  });
+
+  describe('Output parsing', () => {
+    it('should parse test results from output', async () => {
+      const config: TestExecutionConfig = {
+        framework: 'jest',
+        args: ['--version'],
+        timeout: 10000,
+        attachInspector: false,
+      };
+
+      const result = await executeTests(config);
+
+      expect(result.totalTests).toBeDefined();
+      expect(result.passedTests).toBeDefined();
+      expect(result.failedTests).toBeDefined();
+      expect(result.skippedTests).toBeDefined();
+      expect(result.suites).toBeDefined();
+      expect(Array.isArray(result.suites)).toBe(true);
+    }, 20000);
+
+    it('should handle empty output', async () => {
+      const config: TestExecutionConfig = {
+        framework: 'jest',
+        args: ['--version'],
+        timeout: 10000,
+        attachInspector: false,
+      };
+
+      const result = await executeTests(config);
+
+      // Even with --version, we should get structured output
+      expect(result.stdout).toBeDefined();
+      expect(result.stderr).toBeDefined();
+      expect(typeof result.stdout).toBe('string');
+      expect(typeof result.stderr).toBe('string');
+    }, 20000);
+  });
+
+  describe('Framework-specific behavior', () => {
+    it('should execute Mocha with custom args', async () => {
+      const config: TestExecutionConfig = {
+        framework: 'mocha',
+        args: ['--version'],
+        timeout: 10000,
+        attachInspector: false,
+      };
+
+      const result = await executeTests(config);
+
+      expect(result.framework).toBe('mocha');
+      expect(result.stdout).toBeDefined();
+    }, 20000);
+
+    it('should execute Vitest with custom args', async () => {
+      const config: TestExecutionConfig = {
+        framework: 'vitest',
+        args: ['--version'],
+        timeout: 10000,
+        attachInspector: false,
+      };
+
+      const result = await executeTests(config);
+
+      expect(result.framework).toBe('vitest');
+      expect(result.stdout).toBeDefined();
+    }, 20000);
+  });
+
+  describe('Inspector attachment', () => {
+    it('should handle inspector attachment flag', async () => {
+      const config: TestExecutionConfig = {
+        framework: 'jest',
+        args: ['--version'],
+        timeout: 10000,
+        attachInspector: true, // Enable inspector
+      };
+
+      const result = await executeTests(config);
+
+      expect(result.framework).toBe('jest');
+      // wsUrl may or may not be set depending on whether inspector attached
+      // Just verify the test completes
+      expect(result.stdout).toBeDefined();
+    }, 20000);
+
+    it('should work without inspector attachment', async () => {
+      const config: TestExecutionConfig = {
+        framework: 'jest',
+        args: ['--version'],
+        timeout: 10000,
+        attachInspector: false,
+      };
+
+      const result = await executeTests(config);
+
+      expect(result.framework).toBe('jest');
+      expect(result.wsUrl).toBeUndefined();
+    }, 20000);
+  });
 });

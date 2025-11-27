@@ -54,7 +54,7 @@ export interface TestExecutionConfig {
 /**
  * Parse Jest JSON output
  */
-function parseJestOutput(
+export function parseJestOutput(
   stdout: string,
   stderr: string,
 ): Partial<TestExecutionResult> {
@@ -164,7 +164,7 @@ function parseJestOutput(
 /**
  * Parse Mocha output
  */
-function parseMochaOutput(
+export function parseMochaOutput(
   stdout: string,
   stderr: string,
 ): Partial<TestExecutionResult> {
@@ -246,7 +246,7 @@ function parseMochaOutput(
 /**
  * Parse Vitest output
  */
-function parseVitestOutput(
+export function parseVitestOutput(
   stdout: string,
   stderr: string,
 ): Partial<TestExecutionResult> {

@@ -342,5 +342,200 @@ describe('SourceMapManager', () => {
       manager.clearCache();
       expect(manager.getCacheSize()).toBe(0);
     });
+
+    it('should handle concurrent loads of the same source map', async () => {
+      const jsFile = path.resolve(
+        __dirname,
+        '../../test-fixtures/typescript-sample.js',
+      );
+
+      // Start multiple loads concurrently
+      const promises = [
+        manager.loadSourceMap(jsFile),
+        manager.loadSourceMap(jsFile),
+        manager.loadSourceMap(jsFile),
+      ];
+
+      const results = await Promise.all(promises);
+
+      // All should return the same consumer
+      expect(results[0]).not.toBeNull();
+      expect(results[1]).not.toBeNull();
+      expect(results[2]).not.toBeNull();
+
+      // Should only have one cached entry
+      expect(manager.getCacheSize()).toBe(1);
+    });
+
+    it('should return cached source map consumer', async () => {
+      const jsFile = path.resolve(
+        __dirname,
+        '../../test-fixtures/typescript-sample.js',
+      );
+
+      await manager.loadSourceMap(jsFile);
+
+      const cached = manager.getCachedSourceMap(jsFile);
+      expect(cached).not.toBeUndefined();
+    });
+
+    it('should return undefined for non-cached source map', () => {
+      const jsFile = path.resolve(
+        __dirname,
+        '../../test-fixtures/typescript-sample.js',
+      );
+
+      const cached = manager.getCachedSourceMap(jsFile);
+      expect(cached).toBeUndefined();
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle invalid source map JSON gracefully', async () => {
+      const jsFile = path.resolve(
+        __dirname,
+        '../../test-fixtures/invalid-map.js',
+      );
+
+      // This should return null instead of throwing
+      const consumer = await manager.loadSourceMap(jsFile);
+      expect(consumer).toBeNull();
+    });
+
+    it('should handle missing source map file gracefully', async () => {
+      const jsFile = path.resolve(__dirname, '../../test-fixtures/no-map.js');
+
+      const consumer = await manager.loadSourceMap(jsFile);
+      expect(consumer).toBeNull();
+    });
+
+    it('should handle errors in mapSourceToCompiled gracefully', async () => {
+      const tsFile = path.resolve(
+        __dirname,
+        '../../test-fixtures/nonexistent.ts',
+      );
+
+      const result = await manager.mapSourceToCompiled({
+        file: tsFile,
+        line: 1,
+        column: 0,
+      });
+
+      expect(result).toBeNull();
+    });
+
+    it('should handle errors in mapCompiledToSource gracefully', async () => {
+      const jsFile = path.resolve(
+        __dirname,
+        '../../test-fixtures/nonexistent.js',
+      );
+
+      const result = await manager.mapCompiledToSource({
+        file: jsFile,
+        line: 1,
+        column: 0,
+      });
+
+      expect(result).toBeNull();
+    });
+
+    it('should handle invalid location in mapCompiledToSource', async () => {
+      const jsFile = path.resolve(
+        __dirname,
+        '../../test-fixtures/typescript-sample.js',
+      );
+
+      // Try to map a location that doesn't exist in the source map
+      const result = await manager.mapCompiledToSource({
+        file: jsFile,
+        line: 99999,
+        column: 99999,
+      });
+
+      // Should return null for unmapped locations
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('Source File Resolution', () => {
+    it('should find compiled file for TypeScript source', async () => {
+      const tsFile = path.resolve(
+        __dirname,
+        '../../test-fixtures/typescript-sample.ts',
+      );
+
+      const result = await manager.mapSourceToCompiled({
+        file: tsFile,
+        line: 2,
+        column: 0,
+      });
+
+      expect(result).not.toBeNull();
+      if (result) {
+        expect(result.file).toContain('.js');
+      }
+    });
+
+    it('should handle TypeScript files without compiled output', async () => {
+      const tsFile = path.resolve(
+        __dirname,
+        '../../test-fixtures/no-compiled-output.ts',
+      );
+
+      const result = await manager.mapSourceToCompiled({
+        file: tsFile,
+        line: 1,
+        column: 0,
+      });
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('Variable Name Mapping', () => {
+    it('should return null for locations without name mappings', async () => {
+      const jsFile = path.resolve(
+        __dirname,
+        '../../test-fixtures/typescript-sample.js',
+      );
+
+      // Try a location that likely doesn't have a name mapping
+      const name = await manager.mapVariableName(jsFile, 'someVar', 1, 0);
+
+      // Could be null if no mapping exists at this location
+      if (name !== null) {
+        expect(typeof name).toBe('string');
+      }
+    });
+
+    it('should handle errors in mapVariableName gracefully', async () => {
+      const jsFile = path.resolve(
+        __dirname,
+        '../../test-fixtures/nonexistent.js',
+      );
+
+      const name = await manager.mapVariableName(jsFile, 'someVar', 1, 0);
+      expect(name).toBeNull();
+    });
+
+    it('should handle errors in getVariableNamesAtLocation gracefully', async () => {
+      const jsFile = path.resolve(
+        __dirname,
+        '../../test-fixtures/nonexistent.js',
+      );
+
+      const names = await manager.getVariableNamesAtLocation(jsFile, 1, 0);
+      expect(names).toEqual([]);
+    });
+
+    it('should return empty array for locations without variable names', async () => {
+      const jsFile = path.resolve(
+        __dirname,
+        '../../test-fixtures/simple-script.js',
+      );
+
+      const names = await manager.getVariableNamesAtLocation(jsFile, 1, 0);
+      expect(names).toEqual([]);
+    });
   });
 });

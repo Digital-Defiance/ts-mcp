@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "@types/source-map": "^0.5.7",
-    "@types/ws": "^8.18.1"
+    "@types/ws": "^8.18.1",
+    "mock-socket": "^9.3.1"
   }
 }
