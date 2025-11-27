@@ -419,7 +419,7 @@ This project follows a spec-driven development approach:
 
 ## 📄 License
 
-[Add your license here]
+[MIT](./LICENSE)
 
 ## 🔗 Related Projects
 
@@ -429,7 +429,7 @@ This project follows a spec-driven development approach:
 
 ## 📞 Contact
 
-[Add contact information or links]
+[info@digitaldefiance.org](mailto:info@digitaldefiance.org)
 
 ---
 
