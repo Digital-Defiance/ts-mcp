@@ -70,7 +70,7 @@ describe('MCP Debugger Server - E2E', () => {
 
       const timeout = setTimeout(() => {
         reject(new Error(`Request timeout for ${method}`));
-      }, 5000);
+      }, 30000); // Increased timeout for test framework starts
 
       const onData = (data: Buffer) => {
         responseData += data.toString();
