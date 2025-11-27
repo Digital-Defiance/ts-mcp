@@ -1217,7 +1217,7 @@
     - Optimize test execution for coverage runs
     - _Requirements: Enterprise quality_
 
-  - [-] 36.3 Improve critical module coverage to 90%+ (P1 - High Priority)
+  - [x] 36.3 Improve critical module coverage to 90%+ (P1 - High Priority)
     - cdp-breakpoint-operations.ts: 15.62% → 90% (54 lines needed)
     - breakpoint-manager.ts: 41.02% → 90% (46 lines needed)
     - cpu-profiler.ts: 41.23% → 90% (57 lines needed)
