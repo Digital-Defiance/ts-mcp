@@ -66,6 +66,11 @@ export class McpDebuggerServer {
     this.registerDebuggerSetExceptionBreakpoint();
     this.registerDebuggerSetFunctionBreakpoint();
     this.registerDebuggerSetHitCountCondition();
+    // Performance profiling tools
+    this.registerDebuggerStartCPUProfile();
+    this.registerDebuggerStopCPUProfile();
+    this.registerDebuggerTakeHeapSnapshot();
+    this.registerDebuggerGetPerformanceMetrics();
   }
 
   /**
@@ -2484,6 +2489,383 @@ export class McpDebuggerServer {
                   {
                     status: 'error',
                     code: 'HIT_COUNT_CONDITION_SET_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_start_cpu_profile
+   * Start CPU profiling for a debug session
+   */
+  private registerDebuggerStartCPUProfile(): void {
+    this.server.registerTool(
+      'debugger_start_cpu_profile',
+      {
+        description:
+          'Start CPU profiling for a debug session. Collects CPU profile data for performance analysis.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          await session.startCPUProfile();
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    message: 'CPU profiling started',
+                    sessionId: args.sessionId,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'CPU_PROFILE_START_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_stop_cpu_profile
+   * Stop CPU profiling and return the profile data with analysis
+   */
+  private registerDebuggerStopCPUProfile(): void {
+    this.server.registerTool(
+      'debugger_stop_cpu_profile',
+      {
+        description:
+          'Stop CPU profiling and return the profile data with bottleneck analysis.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          const profile = await session.stopCPUProfile();
+          const analysis = session.analyzeCPUProfile(profile);
+          const cpuProfiler = session.getCPUProfiler();
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    profile: {
+                      startTime: profile.startTime,
+                      endTime: profile.endTime,
+                      duration: profile.endTime - profile.startTime,
+                      nodeCount: profile.nodes.length,
+                      sampleCount: profile.samples?.length || 0,
+                    },
+                    analysis: {
+                      totalTime: analysis.totalTime,
+                      topFunctions: analysis.topFunctions.slice(0, 10),
+                      bottlenecks: analysis.bottlenecks,
+                    },
+                    formattedAnalysis: cpuProfiler?.formatAnalysis(analysis),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'CPU_PROFILE_STOP_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_take_heap_snapshot
+   * Take a heap snapshot for memory analysis
+   */
+  private registerDebuggerTakeHeapSnapshot(): void {
+    this.server.registerTool(
+      'debugger_take_heap_snapshot',
+      {
+        description:
+          'Take a heap snapshot for memory analysis. Returns memory usage report.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          const snapshot = await session.takeHeapSnapshot();
+          const report = await session.generateMemoryReport(snapshot);
+          const memoryProfiler = session.getMemoryProfiler();
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    snapshot: {
+                      nodeCount: snapshot.snapshot.node_count,
+                      edgeCount: snapshot.snapshot.edge_count,
+                    },
+                    report: {
+                      totalHeapSize: report.totalHeapSize,
+                      usedHeapSize: report.usedHeapSize,
+                      heapUsagePercentage:
+                        (report.usedHeapSize / report.totalHeapSize) * 100,
+                      topObjectTypes: report.objectTypes.slice(0, 10),
+                    },
+                    formattedReport: memoryProfiler?.formatMemoryReport(report),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'HEAP_SNAPSHOT_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_get_performance_metrics
+   * Get performance metrics including memory usage and timeline data
+   */
+  private registerDebuggerGetPerformanceMetrics(): void {
+    this.server.registerTool(
+      'debugger_get_performance_metrics',
+      {
+        description:
+          'Get performance metrics including current memory usage, performance timeline, and leak detection.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+          includeLeakDetection: z
+            .boolean()
+            .optional()
+            .describe(
+              'Whether to run memory leak detection (takes 10 seconds)',
+            ),
+          includePerformanceTimeline: z
+            .boolean()
+            .optional()
+            .describe('Whether to include performance timeline data'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          const memoryUsage = await session.getMemoryUsage();
+          const result: any = {
+            status: 'success',
+            memoryUsage: {
+              usedSize: memoryUsage.usedSize,
+              totalSize: memoryUsage.totalSize,
+              usagePercentage:
+                (memoryUsage.usedSize / memoryUsage.totalSize) * 100,
+              timestamp: memoryUsage.timestamp,
+            },
+          };
+
+          // Optional leak detection
+          if (args.includeLeakDetection) {
+            const leakAnalysis = await session.detectMemoryLeaks();
+            result.leakDetection = {
+              isLeaking: leakAnalysis.isLeaking,
+              growthRate: leakAnalysis.growthRate,
+              growthRateMBPerSecond: leakAnalysis.growthRate / (1024 * 1024),
+              snapshotCount: leakAnalysis.snapshots.length,
+            };
+          }
+
+          // Optional performance timeline
+          if (args.includePerformanceTimeline) {
+            const timeline = session.getPerformanceTimeline();
+            if (timeline && timeline.isRecording()) {
+              const events = timeline.getEvents();
+              const functionTimings = timeline.getFunctionTimings();
+              result.performanceTimeline = {
+                eventCount: events.length,
+                topFunctions: functionTimings.slice(0, 10),
+              };
+            }
+          }
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'PERFORMANCE_METRICS_FAILED',
                     message:
                       error instanceof Error ? error.message : String(error),
                   },

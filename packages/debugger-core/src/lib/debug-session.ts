@@ -10,6 +10,19 @@ import {
   PropertyDescriptor,
 } from './variable-inspector';
 import { SourceMapManager } from './source-map-manager';
+import { CPUProfiler, CPUProfile, ProfileAnalysis } from './cpu-profiler';
+import {
+  MemoryProfiler,
+  HeapSnapshot,
+  MemoryUsage,
+  MemoryLeakAnalysis,
+  MemoryReport,
+} from './memory-profiler';
+import {
+  PerformanceTimeline,
+  PerformanceReport,
+  PerformanceEvent,
+} from './performance-timeline';
 
 /**
  * Breakpoint type enumeration
@@ -136,6 +149,9 @@ export class DebugSession {
   private currentFrameIndex: number = 0;
   private crashHandlers: Array<(error: Error) => void> = [];
   private crashError?: Error;
+  private cpuProfiler: CPUProfiler | null = null;
+  private memoryProfiler: MemoryProfiler | null = null;
+  private performanceTimeline: PerformanceTimeline | null = null;
 
   constructor(id: string, config: DebugSessionConfig) {
     this.id = id;
@@ -172,6 +188,15 @@ export class DebugSession {
       // Initialize variable inspector
       this.variableInspector = new VariableInspector(this.inspector);
       this.variableInspector.setSourceMapManager(this.sourceMapManager);
+
+      // Initialize CPU profiler
+      this.cpuProfiler = new CPUProfiler(this.inspector);
+
+      // Initialize memory profiler
+      this.memoryProfiler = new MemoryProfiler(this.inspector);
+
+      // Initialize performance timeline
+      this.performanceTimeline = new PerformanceTimeline(this.inspector);
 
       // Enable debugging domains
       await this.inspector.send('Debugger.enable');
@@ -1155,5 +1180,203 @@ export class DebugSession {
    */
   hasCrashed(): boolean {
     return this.crashError !== undefined;
+  }
+
+  /**
+   * Start CPU profiling
+   * Begins collecting CPU profile data for performance analysis
+   */
+  async startCPUProfile(): Promise<void> {
+    if (!this.cpuProfiler) {
+      throw new Error('Session not started');
+    }
+
+    await this.cpuProfiler.start();
+  }
+
+  /**
+   * Stop CPU profiling and return the profile data
+   * @returns The captured CPU profile
+   */
+  async stopCPUProfile(): Promise<CPUProfile> {
+    if (!this.cpuProfiler) {
+      throw new Error('Session not started');
+    }
+
+    return await this.cpuProfiler.stop();
+  }
+
+  /**
+   * Check if CPU profiling is currently active
+   */
+  isCPUProfiling(): boolean {
+    return this.cpuProfiler?.isProfiling() || false;
+  }
+
+  /**
+   * Get the CPU profiler instance
+   */
+  getCPUProfiler(): CPUProfiler | null {
+    return this.cpuProfiler;
+  }
+
+  /**
+   * Analyze a CPU profile to identify bottlenecks
+   * @param profile The CPU profile to analyze
+   * @returns Analysis results with top functions and bottlenecks
+   */
+  analyzeCPUProfile(profile: CPUProfile): ProfileAnalysis {
+    if (!this.cpuProfiler) {
+      throw new Error('Session not started');
+    }
+
+    return this.cpuProfiler.analyzeProfile(profile);
+  }
+
+  /**
+   * Take a heap snapshot for memory analysis
+   * @returns The heap snapshot data
+   */
+  async takeHeapSnapshot(): Promise<HeapSnapshot> {
+    if (!this.memoryProfiler) {
+      throw new Error('Session not started');
+    }
+
+    return await this.memoryProfiler.takeHeapSnapshot();
+  }
+
+  /**
+   * Get current memory usage statistics
+   * @returns Memory usage information
+   */
+  async getMemoryUsage(): Promise<MemoryUsage> {
+    if (!this.memoryProfiler) {
+      throw new Error('Session not started');
+    }
+
+    return await this.memoryProfiler.getMemoryUsage();
+  }
+
+  /**
+   * Start tracking heap allocations over time
+   * @param samplingInterval Sampling interval in bytes
+   */
+  async startTrackingHeapObjects(samplingInterval?: number): Promise<void> {
+    if (!this.memoryProfiler) {
+      throw new Error('Session not started');
+    }
+
+    await this.memoryProfiler.startTrackingHeapObjects(samplingInterval);
+  }
+
+  /**
+   * Stop tracking heap allocations
+   * @returns The final heap snapshot
+   */
+  async stopTrackingHeapObjects(): Promise<HeapSnapshot> {
+    if (!this.memoryProfiler) {
+      throw new Error('Session not started');
+    }
+
+    return await this.memoryProfiler.stopTrackingHeapObjects();
+  }
+
+  /**
+   * Detect memory leaks by analyzing heap growth over time
+   * @param durationMs Duration to monitor in milliseconds
+   * @param intervalMs Interval between snapshots in milliseconds
+   * @returns Memory leak analysis
+   */
+  async detectMemoryLeaks(
+    durationMs?: number,
+    intervalMs?: number,
+  ): Promise<MemoryLeakAnalysis> {
+    if (!this.memoryProfiler) {
+      throw new Error('Session not started');
+    }
+
+    return await this.memoryProfiler.detectMemoryLeaks(durationMs, intervalMs);
+  }
+
+  /**
+   * Generate a memory usage report
+   * @param snapshot Optional heap snapshot to analyze
+   * @returns Memory usage report
+   */
+  async generateMemoryReport(snapshot?: HeapSnapshot): Promise<MemoryReport> {
+    if (!this.memoryProfiler) {
+      throw new Error('Session not started');
+    }
+
+    return await this.memoryProfiler.generateMemoryReport(snapshot);
+  }
+
+  /**
+   * Get the memory profiler instance
+   */
+  getMemoryProfiler(): MemoryProfiler | null {
+    return this.memoryProfiler;
+  }
+
+  /**
+   * Start recording performance events
+   */
+  async startPerformanceRecording(): Promise<void> {
+    if (!this.performanceTimeline) {
+      throw new Error('Session not started');
+    }
+
+    await this.performanceTimeline.startRecording();
+  }
+
+  /**
+   * Stop recording performance events and get the report
+   * @returns Performance report
+   */
+  async stopPerformanceRecording(): Promise<PerformanceReport> {
+    if (!this.performanceTimeline) {
+      throw new Error('Session not started');
+    }
+
+    return await this.performanceTimeline.stopRecording();
+  }
+
+  /**
+   * Check if performance recording is active
+   */
+  isPerformanceRecording(): boolean {
+    return this.performanceTimeline?.isRecording() || false;
+  }
+
+  /**
+   * Record a function call timing in the performance timeline
+   * @param functionName Name of the function
+   * @param file File path
+   * @param line Line number
+   * @param duration Duration in microseconds
+   */
+  recordFunctionCall(
+    functionName: string,
+    file: string,
+    line: number,
+    duration: number,
+  ): void {
+    if (!this.performanceTimeline) {
+      throw new Error('Session not started');
+    }
+
+    this.performanceTimeline.recordFunctionCall(
+      functionName,
+      file,
+      line,
+      duration,
+    );
+  }
+
+  /**
+   * Get the performance timeline instance
+   */
+  getPerformanceTimeline(): PerformanceTimeline | null {
+    return this.performanceTimeline;
   }
 }
