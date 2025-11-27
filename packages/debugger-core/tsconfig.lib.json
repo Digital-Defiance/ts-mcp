@@ -4,11 +4,17 @@
     "baseUrl": ".",
     "rootDir": "src",
     "outDir": "dist",
+    "incremental": true,
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": false,
-    "types": ["node"]
+    "allowSyntheticDefaultImports": true,
+    "types": [
+      "node"
+    ]
   },
-  "include": ["src/**/*.ts"],
+  "include": [
+    "src/**/*.ts"
+  ],
   "references": [],
   "exclude": [
     "jest.config.ts",

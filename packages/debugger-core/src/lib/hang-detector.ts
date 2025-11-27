@@ -3,9 +3,9 @@ import { InspectorClient } from './inspector-client';
 import { ChildProcess } from 'child_process';
 
 /**
- * Stack frame information
+ * Stack frame information for hang detection
  */
-export interface StackFrame {
+export interface HangStackFrame {
   functionName: string;
   file: string;
   line: number;
@@ -20,7 +20,7 @@ export interface HangDetectionResult {
   completed?: boolean;
   exitCode?: number;
   location?: string;
-  stack?: StackFrame[];
+  stack?: HangStackFrame[];
   message?: string;
   duration?: number;
 }
@@ -322,7 +322,7 @@ export class HangDetector {
 /**
  * Format call frames into stack frames with absolute paths
  */
-function formatCallStack(callFrames: any[], cwd?: string): StackFrame[] {
+function formatCallStack(callFrames: any[], cwd?: string): HangStackFrame[] {
   const path = require('path');
 
   return callFrames.map((frame: any) => {

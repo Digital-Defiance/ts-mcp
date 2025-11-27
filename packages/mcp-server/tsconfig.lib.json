@@ -6,10 +6,16 @@
     "outDir": "dist",
     "composite": true,
     "declaration": true,
+    "allowSyntheticDefaultImports": true,
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "types": [
       "node"
-    ]
+    ],
+    "paths": {
+      "@digitaldefiance/ts-mcp-core": [
+        "../debugger-core/dist/index.d.ts"
+      ]
+    }
   },
   "include": [
     "src/**/*.ts"

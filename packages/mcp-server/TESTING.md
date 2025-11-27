@@ -1,153 +1,323 @@
-# MCP Debugger Server - Testing Guide
+# MCP Debugger Server - E2E Testing Guide
 
-This document describes how to test the MCP Debugger Server end-to-end.
+This document provides comprehensive instructions for running and troubleshooting E2E tests for the MCP Debugger Server.
 
-## Testing Methods
+## Table of Contents
 
-### 1. Unit Tests (Property-Based Tests)
+- [Prerequisites](#prerequisites)
+- [Running E2E Tests](#running-e2e-tests)
+- [Manual Testing](#manual-testing)
+- [Using MCP Inspector](#using-mcp-inspector)
+- [Troubleshooting](#troubleshooting)
 
-Run the unit tests that verify response format consistency:
+## Prerequisites
 
-```bash
-npx nx test @digitaldefiance/ts-mcp-server
-```
+Before running E2E tests, ensure you have:
 
-These tests use property-based testing (fast-check) to verify that all tool responses follow the correct format with 100+ test cases per property.
+1. **Node.js 16+** installed
+2. **Built packages**: Run `npx nx build @digitaldefiance/ts-mcp-server` to build both the core and server packages
+3. **Test fixtures**: The test fixtures are located in `packages/debugger-core/test-fixtures/`
 
-### 2. Manual Testing Script
+## Running E2E Tests
 
-The manual testing script demonstrates real MCP protocol communication:
+### Automated E2E Tests
 
-```bash
-# Step 1: Build the server
-npx nx build @digitaldefiance/ts-mcp-server
-
-# Step 2: Run the test script
-node packages/mcp-server/test-mcp-server.js
-```
-
-This script will:
-- ✅ Start the MCP server
-- ✅ Initialize the MCP protocol
-- ✅ List all available tools
-- ✅ Test hang detection with normal completion
-- ✅ Test hang detection with infinite loop
-- ✅ Test error handling
-
-### 3. E2E Tests (Jest)
-
-Run the full E2E test suite:
+The E2E test suite validates the MCP protocol implementation and all debugging tools.
 
 ```bash
+# Run all E2E tests
 npx nx test @digitaldefiance/ts-mcp-server --testPathPattern=e2e
+
+# Run with increased timeout (recommended)
+npx nx test @digitaldefiance/ts-mcp-server --testPathPattern=e2e --testTimeout=60000
+
+# Run a specific test
+npx nx test @digitaldefiance/ts-mcp-server --testPathPattern="should detect a hanging process"
 ```
 
-These tests:
-- Start the actual MCP server as a child process
-- Communicate via stdio using JSON-RPC
-- Test all MCP protocol methods (initialize, tools/list, tools/call)
-- Verify tool execution and error handling
+### Test Coverage
 
-### 4. Testing with MCP Inspector
+The E2E test suite covers:
 
-You can also test the server using the official MCP Inspector tool:
+1. **MCP Protocol Initialization** (1 test)
+   - Server initialization with protocol version and capabilities
+
+2. **Tool Discovery** (2 tests)
+   - Listing all available tools
+   - Validating tool schemas
+
+3. **Hang Detection** (2 tests)
+   - Detecting infinite loops
+   - Detecting normal completion without false positives
+
+4. **Debug Session Management** (1 test)
+   - Starting debug sessions with paused state
+
+5. **Session Operations** (5 tests)
+   - Setting breakpoints
+   - Continuing execution
+   - Stepping over code
+   - Inspecting variables
+   - Getting call stacks
+
+6. **Error Handling** (4 tests)
+   - Invalid session IDs
+   - Missing required parameters
+   - Invalid tool names
+   - Proper error response structure
+
+**Total: 15 tests**
+
+### Expected Results
+
+All tests should pass:
+
+```
+Test Suites: 1 passed, 1 total
+Tests:       15 passed, 15 total
+```
+
+## Manual Testing
+
+For interactive testing with colored output and clear pass/fail indicators, use the manual testing script:
 
 ```bash
-# Install MCP Inspector
-npm install -g @modelcontextprotocol/inspector
+# Make the script executable (first time only)
+chmod +x packages/mcp-server/test-mcp-manual.js
 
-# Build the server
-npx nx build @digitaldefiance/ts-mcp-server
-
-# Run the inspector
-mcp-inspector node packages/mcp-server/dist/index.js
+# Run manual tests
+node packages/mcp-server/test-mcp-manual.js
 ```
 
-This will open a web UI where you can:
-- See all available tools
-- Call tools with custom parameters
-- View responses in real-time
-- Debug MCP protocol communication
+The manual testing script provides:
+- ✓ Green checkmarks for passing tests
+- ✗ Red X marks for failing tests
+- ℹ Blue info messages
+- ⚠ Yellow warnings
+- Detailed test output with response data
+- Summary with success rate percentage
 
-### 5. Integration with Kiro
+### Manual Test Coverage
 
-To test the server with Kiro:
+The manual script tests:
+1. Protocol initialization
+2. Tool discovery
+3. Hang detection (infinite loop)
+4. Debug session start
+5. Breakpoint setting
+6. Error handling
 
-1. Build the server:
+## Using MCP Inspector
+
+The MCP Inspector is a tool for interactively testing MCP servers. It's particularly useful for debugging protocol issues.
+
+### Installation
+
+```bash
+npm install -g @modelcontextprotocol/inspector
+```
+
+### Usage
+
+1. **Start the MCP server**:
    ```bash
-   npx nx build @digitaldefiance/ts-mcp-server
+   node packages/mcp-server/dist/src/index.js
    ```
 
-2. Add to your `.kiro/settings/mcp.json`:
-   ```json
-   {
-     "mcpServers": {
-       "debugger": {
-         "command": "node",
-         "args": ["/absolute/path/to/packages/mcp-server/dist/index.js"],
-         "disabled": false
-       }
-     }
-   }
+2. **In another terminal, use the inspector**:
+   ```bash
+   mcp-inspector
    ```
 
-3. Restart Kiro or reconnect the MCP server
+3. **Connect to the server** using stdio transport
 
-4. Test by asking Kiro to use the debugger tools
+4. **Test tools interactively**:
+   - View available tools
+   - Call tools with custom parameters
+   - Inspect responses in real-time
 
-## Available Tools
+### Example Inspector Session
 
-The MCP server provides these tools:
+```json
+// Initialize
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {},
+    "clientInfo": {"name": "inspector", "version": "1.0.0"}
+  }
+}
 
-1. **debugger_start** - Start a debug session
-2. **debugger_set_breakpoint** - Set breakpoints
-3. **debugger_continue** - Resume execution
-4. **debugger_step_over** - Step over current line
-5. **debugger_inspect** - Evaluate expressions
-6. **debugger_get_stack** - Get call stack
-7. **debugger_detect_hang** - Detect hanging processes
+// List tools
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/list"
+}
 
-## Test Fixtures
-
-Test fixtures are located in `packages/debugger-core/test-fixtures/`:
-
-- `normal-completion.js` - Script that completes normally
-- `infinite-loop.js` - Script with infinite loop
-- `simple-script.js` - Basic script for debugging
-- `step-test.js` - Script for testing step operations
-- `watch-test.js` - Script for testing variable watching
+// Call debugger_detect_hang
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "debugger_detect_hang",
+    "arguments": {
+      "command": "node",
+      "args": ["test-fixtures/infinite-loop.js"],
+      "timeout": 2000,
+      "sampleInterval": 100
+    }
+  }
+}
+```
 
 ## Troubleshooting
 
-### Server won't start
+### Common Issues
 
-- Make sure you've built the server: `npx nx build @digitaldefiance/ts-mcp-server`
-- Check that Node.js version is compatible (v16+)
-- Look for error messages in stderr
+#### 1. Build Errors
 
-### Tests timeout
+**Problem**: Tests fail with "Cannot find module" errors
 
-- Increase timeout values in test configuration
-- Check that test fixtures exist
-- Verify debugger-core is built: `npx nx build @digitaldefiance/ts-mcp-core`
+**Solution**:
+```bash
+# Clean and rebuild
+rm -rf packages/*/dist
+npx nx build @digitaldefiance/ts-mcp-core
+npx nx build @digitaldefiance/ts-mcp-server
+```
 
-### MCP protocol errors
+#### 2. Test Timeouts
 
-- Verify JSON-RPC message format
-- Check that stdio communication is working
-- Use MCP Inspector to debug protocol issues
+**Problem**: Tests timeout with "Request timeout for X" errors
 
-## CI/CD Integration
+**Solution**:
+- Increase test timeout: `--testTimeout=60000`
+- Check if the server is starting correctly
+- Look for stderr output in test logs
 
-To run tests in CI:
+#### 3. WebSocket Connection Issues
+
+**Problem**: "ws_1.default is not a constructor" or similar WebSocket errors
+
+**Solution**:
+- Ensure you're using CommonJS module format
+- Check that `ws` package is properly installed
+- Verify tsconfig.json has `"module": "CommonJS"`
+
+#### 4. False Positive Hang Detection
+
+**Problem**: Normal completion scripts are detected as hung
+
+**Solution**:
+- Increase the timeout parameter in hang detection calls
+- The default 2000ms may be too short for some scripts
+- Use 5000ms or higher for scripts with I/O operations
+
+#### 5. Session State Issues
+
+**Problem**: "Cannot step over in state: running" or "Process must be paused"
+
+**Solution**:
+- Ensure the process is paused before calling step/inspect operations
+- Set breakpoints and continue to them before stepping
+- Wait for breakpoint events after calling continue
+
+### Debug Logging
+
+Enable debug logging to see detailed server output:
 
 ```bash
-# Run all tests
-npx nx test @digitaldefiance/ts-mcp-server
-
-# Run with coverage
-npx nx test @digitaldefiance/ts-mcp-server --coverage
-
-# Run only E2E tests
-npx nx test @digitaldefiance/ts-mcp-server --testPathPattern=e2e
+# Run tests with server stderr visible
+npx nx test @digitaldefiance/ts-mcp-server --testPathPattern=e2e 2>&1 | grep -A 5 "Server stderr"
 ```
+
+### Checking Server Health
+
+Test if the server responds to basic requests:
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}' | node packages/mcp-server/dist/src/index.js
+```
+
+Expected output:
+```json
+{"result":{"protocolVersion":"2024-11-05","capabilities":{"tools":{"listChanged":true}},"serverInfo":{"name":"debugger-server","version":"1.0.0"}},"jsonrpc":"2.0","id":1}
+```
+
+### Test Fixtures
+
+If tests fail due to missing fixtures, verify they exist:
+
+```bash
+ls -la packages/debugger-core/test-fixtures/
+```
+
+Required fixtures:
+- `infinite-loop.js` - For hang detection tests
+- `normal-completion.js` - For normal completion tests
+- `simple-script.js` - For basic debugging tests
+- `step-test-simple.js` - For step operation tests
+
+### Getting Help
+
+If you encounter issues not covered here:
+
+1. Check the test output for specific error messages
+2. Review the server stderr output
+3. Verify all dependencies are installed: `npm install`
+4. Ensure Node.js version is 16 or higher: `node --version`
+5. Check that the build completed successfully
+
+## Continuous Integration
+
+For CI/CD pipelines, use:
+
+```bash
+# Build and test in one command
+npx nx build @digitaldefiance/ts-mcp-server && \
+npx nx test @digitaldefiance/ts-mcp-server --testPathPattern=e2e --testTimeout=60000
+```
+
+### CI Best Practices
+
+1. **Always build before testing**: E2E tests require built artifacts
+2. **Use adequate timeouts**: CI environments may be slower
+3. **Cache node_modules**: Speed up builds with dependency caching
+4. **Run tests in isolation**: Each test should be independent
+5. **Collect test artifacts**: Save test logs and coverage reports
+
+## Performance Benchmarks
+
+Expected test execution times (approximate):
+
+- Protocol initialization: < 20ms
+- Tool discovery: < 10ms
+- Hang detection (infinite loop): ~2.5s
+- Hang detection (normal): ~500ms
+- Debug session start: ~200ms
+- Session operations: ~100-500ms each
+- Error handling: < 10ms
+
+**Total suite execution**: ~6-8 seconds
+
+## Next Steps
+
+After E2E tests pass:
+
+1. Run unit tests: `npx nx test @digitaldefiance/ts-mcp-core`
+2. Run property-based tests (if implemented)
+3. Test with real-world debugging scenarios
+4. Integrate with MCP clients (Kiro, VS Code, etc.)
+5. Deploy to production environment
+
+## Additional Resources
+
+- [MCP Protocol Specification](https://modelcontextprotocol.io/docs)
+- [MCP SDK Documentation](https://github.com/modelcontextprotocol/sdk)
+- [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/)
+- [Node.js Inspector API](https://nodejs.org/api/inspector.html)

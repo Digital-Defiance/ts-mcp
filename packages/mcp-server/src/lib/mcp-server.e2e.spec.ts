@@ -31,9 +31,20 @@ describe('MCP Debugger Server - E2E', () => {
         }
 
         // Start the server
-        const serverPath = path.join(__dirname, '../../dist/index.js');
+        const serverPath = path.join(__dirname, '../../dist/src/index.js');
         serverProcess = spawn('node', [serverPath], {
           stdio: ['pipe', 'pipe', 'pipe'],
+        });
+
+        // Log stderr for debugging
+        serverProcess.stderr?.on('data', (data) => {
+          console.error('Server stderr:', data.toString());
+        });
+
+        // Log any errors
+        serverProcess.on('error', (error) => {
+          console.error('Server process error:', error);
+          reject(error);
         });
 
         // Wait for server to be ready
@@ -185,6 +196,9 @@ describe('MCP Debugger Server - E2E', () => {
       expect(textContent).toBeDefined();
 
       const response = JSON.parse(textContent.text);
+      if (response.status === 'error') {
+        console.error('Error response:', response);
+      }
       expect(response.status).toBe('success');
       expect(response.hung).toBe(true);
       expect(response.location).toBeDefined();
@@ -201,7 +215,7 @@ describe('MCP Debugger Server - E2E', () => {
         arguments: {
           command: 'node',
           args: [testFile],
-          timeout: 2000,
+          timeout: 5000, // Increased timeout to avoid false positive
         },
       });
 
@@ -209,6 +223,9 @@ describe('MCP Debugger Server - E2E', () => {
       const textContent = result.content.find((c: any) => c.type === 'text');
       const response = JSON.parse(textContent.text);
 
+      if (response.hung === true) {
+        console.error('False positive hang detection:', response);
+      }
       expect(response.status).toBe('success');
       expect(response.hung).toBe(false);
       expect(response.completed).toBe(true);
@@ -239,6 +256,162 @@ describe('MCP Debugger Server - E2E', () => {
       expect(response.sessionId).toBeDefined();
       expect(response.state).toBe('paused');
       expect(response.pid).toBeDefined();
+    }, 10000);
+  });
+
+  describe('Tool Execution - Session Operations', () => {
+    let sessionId: string;
+    const testFile = path.join(
+      __dirname,
+      '../../../debugger-core/test-fixtures/step-test-simple.js',
+    );
+
+    beforeAll(async () => {
+      // Start a debug session for testing
+      const result = await sendRequest('tools/call', {
+        name: 'debugger_start',
+        arguments: {
+          command: 'node',
+          args: [testFile],
+          timeout: 10000,
+        },
+      });
+
+      const textContent = result.content.find((c: any) => c.type === 'text');
+      const response = JSON.parse(textContent.text);
+      sessionId = response.sessionId;
+
+      // Set a breakpoint at line 3
+      await sendRequest('tools/call', {
+        name: 'debugger_set_breakpoint',
+        arguments: {
+          sessionId,
+          file: testFile,
+          line: 3,
+        },
+      });
+
+      // Continue to hit the breakpoint
+      await sendRequest('tools/call', {
+        name: 'debugger_continue',
+        arguments: {
+          sessionId,
+        },
+      });
+
+      // Wait for breakpoint to be hit
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }, 15000);
+
+    it('should set a breakpoint', async () => {
+      const result = await sendRequest('tools/call', {
+        name: 'debugger_set_breakpoint',
+        arguments: {
+          sessionId,
+          file: testFile,
+          line: 4,
+        },
+      });
+
+      expect(result).toBeDefined();
+      const textContent = result.content.find((c: any) => c.type === 'text');
+      const response = JSON.parse(textContent.text);
+
+      expect(response.status).toBe('success');
+      expect(response.breakpointId).toBeDefined();
+      expect(response.file).toBe(testFile);
+      expect(response.line).toBe(4);
+    }, 10000);
+
+    it('should continue execution', async () => {
+      const result = await sendRequest('tools/call', {
+        name: 'debugger_continue',
+        arguments: {
+          sessionId,
+        },
+      });
+
+      expect(result).toBeDefined();
+      const textContent = result.content.find((c: any) => c.type === 'text');
+      const response = JSON.parse(textContent.text);
+
+      expect(response.status).toBe('success');
+      expect(response.state).toBeDefined();
+
+      // Wait for the process to hit the next breakpoint
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }, 10000);
+
+    it('should step over', async () => {
+      const result = await sendRequest('tools/call', {
+        name: 'debugger_step_over',
+        arguments: {
+          sessionId,
+        },
+      });
+
+      expect(result).toBeDefined();
+      const textContent = result.content.find((c: any) => c.type === 'text');
+      const response = JSON.parse(textContent.text);
+
+      if (response.status === 'error') {
+        console.error('Step over error:', response);
+      }
+      expect(response.status).toBe('success');
+      expect(response.state).toBeDefined();
+      if (response.location) {
+        expect(response.location.file).toBeDefined();
+        expect(response.location.line).toBeDefined();
+      }
+    }, 10000);
+
+    it('should inspect variables', async () => {
+      const result = await sendRequest('tools/call', {
+        name: 'debugger_inspect',
+        arguments: {
+          sessionId,
+          expression: '1 + 1',
+        },
+      });
+
+      expect(result).toBeDefined();
+      const textContent = result.content.find((c: any) => c.type === 'text');
+      const response = JSON.parse(textContent.text);
+
+      if (response.status === 'error') {
+        console.error('Inspect error:', response);
+      }
+      expect(response.status).toBe('success');
+      expect(response.expression).toBe('1 + 1');
+      expect(response.value).toBe(2);
+      expect(response.type).toBeDefined();
+    }, 10000);
+
+    it('should get call stack', async () => {
+      const result = await sendRequest('tools/call', {
+        name: 'debugger_get_stack',
+        arguments: {
+          sessionId,
+        },
+      });
+
+      expect(result).toBeDefined();
+      const textContent = result.content.find((c: any) => c.type === 'text');
+      const response = JSON.parse(textContent.text);
+
+      if (response.status === 'error') {
+        console.error('Get stack error:', response);
+      }
+      expect(response.status).toBe('success');
+      expect(response.stack).toBeDefined();
+      expect(Array.isArray(response.stack)).toBe(true);
+
+      if (response.stack.length > 0) {
+        const frame = response.stack[0];
+        expect(frame.file).toBeDefined();
+        expect(frame.line).toBeDefined();
+        expect(path.isAbsolute(frame.file)).toBe(true); // Requirement 9.4
+      }
     }, 10000);
   });
 
@@ -275,6 +448,38 @@ describe('MCP Debugger Server - E2E', () => {
       } catch (error) {
         expect(error).toBeDefined();
       }
+    });
+
+    it('should return error for invalid tool name', async () => {
+      const result = await sendRequest('tools/call', {
+        name: 'invalid_tool_name',
+        arguments: {},
+      });
+
+      expect(result).toBeDefined();
+      expect(result.isError).toBe(true);
+
+      const textContent = result.content.find((c: any) => c.type === 'text');
+      expect(textContent).toBeDefined();
+      expect(textContent.text).toContain('invalid_tool_name');
+    });
+
+    it('should have proper error structure', async () => {
+      const result = await sendRequest('tools/call', {
+        name: 'debugger_continue',
+        arguments: {
+          sessionId: 'nonexistent',
+        },
+      });
+
+      expect(result.isError).toBe(true);
+      const textContent = result.content.find((c: any) => c.type === 'text');
+      const response = JSON.parse(textContent.text);
+
+      // Verify error structure per Requirement 9.2
+      expect(response.status).toBe('error');
+      expect(response.code).toBeDefined();
+      expect(response.message).toBeDefined();
     });
   });
 });

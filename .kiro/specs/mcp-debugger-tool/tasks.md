@@ -320,68 +320,68 @@
     - Release all resources
     - _Requirements: 8.2_
 
-  - [-] 13.4 Implement error response formatting
+  - [x] 13.4 Implement error response formatting
     - Create error response structure with code, message, and context
     - Handle CDP errors and convert to user-friendly messages
     - Ensure errors don't crash the MCP server
     - _Requirements: 9.2_
 
-- [ ] 14. Set up MCP server
-  - [ ] 14.1 Create MCP server instance
+- [x] 14. Set up MCP server
+  - [x] 14.1 Create MCP server instance
     - Initialize MCP server with name and version
     - Configure server capabilities
     - Set up stdio transport
     - _Requirements: 9.1_
 
-  - [ ] 14.2 Register all MCP tools
+  - [x] 14.2 Register all MCP tools
     - Register all debugger tools with schemas
     - Connect tool handlers to implementation
     - Add input validation for each tool
     - _Requirements: 9.1_
 
-  - [ ] 14.3 Implement server lifecycle management
+  - [x] 14.3 Implement server lifecycle management
     - Handle server startup and shutdown
     - Clean up all sessions on shutdown
     - Add logging for debugging
     - _Requirements: 8.2_
 
-  - [ ] 14.4 Implement MCP protocol E2E tests
-    - [ ] 14.4.1 Create E2E test suite
+  - [x] 14.4 Implement MCP protocol E2E tests
+    - [x] 14.4.1 Create E2E test suite
       - Set up test infrastructure to spawn MCP server as child process
       - Implement JSON-RPC communication over stdio
       - Create helper functions for sending requests and receiving responses
       - Add timeout handling for test requests
       - _Requirements: 9.1, 9.2_
 
-    - [ ] 14.4.2 Test MCP protocol initialization
+    - [x] 14.4.2 Test MCP protocol initialization
       - Test initialize request with protocol version and capabilities
       - Verify server responds with correct server info and capabilities
       - Test initialized notification
       - Verify tools capability is advertised
       - _Requirements: 9.1_
 
-    - [ ] 14.4.3 Test tool discovery
+    - [x] 14.4.3 Test tool discovery
       - Test tools/list request
       - Verify all 7 tools are returned (debugger_start, debugger_set_breakpoint, etc.)
       - Verify each tool has name, description, and inputSchema
       - Test tool schema validation
       - _Requirements: 9.1_
 
-    - [ ] 14.4.4 Test tool execution - debugger_detect_hang
+    - [x] 14.4.4 Test tool execution - debugger_detect_hang
       - Test hang detection with infinite loop fixture
       - Test hang detection with normal completion fixture
       - Verify response format matches specification
       - Test timeout and sample interval parameters
       - _Requirements: 5.1, 5.2, 5.3, 5.4, 9.1_
 
-    - [ ] 14.4.5 Test tool execution - debugger_start
+    - [x] 14.4.5 Test tool execution - debugger_start
       - Test starting debug session with valid parameters
       - Verify session ID is returned
       - Verify process is paused at start
       - Test with different command and args combinations
       - _Requirements: 2.1, 9.1_
 
-    - [ ] 14.4.6 Test tool execution - session operations
+    - [x] 14.4.6 Test tool execution - session operations
       - Test debugger_set_breakpoint with valid session
       - Test debugger_continue with valid session
       - Test debugger_step_over with valid session
@@ -389,111 +389,244 @@
       - Test debugger_get_stack with valid session
       - _Requirements: 1.1, 2.2, 2.3, 3.4, 4.1, 9.1_
 
-    - [ ] 14.4.7 Test error handling
+    - [x] 14.4.7 Test error handling
       - Test invalid session ID returns proper error
       - Test missing required parameters returns error
       - Test invalid tool name returns error
       - Verify all errors have status, code, and message fields
       - _Requirements: 9.2_
 
-    - [ ] 14.4.8 Create manual testing script
+    - [x] 14.4.8 Create manual testing script
       - Create interactive test script with colored output
       - Test all major MCP operations
       - Provide clear pass/fail indicators
       - Add usage instructions and documentation
       - _Requirements: 9.1, 9.2_
 
-    - [ ] 14.4.9 Create E2E testing documentation
+    - [x] 14.4.9 Create E2E testing documentation
       - Document how to run E2E tests
       - Provide instructions for manual testing
       - Document MCP Inspector usage
       - Add troubleshooting guide for E2E test failures
       - _Requirements: 9.2_
 
-- [ ] 15. Checkpoint - Ensure all tests pass
-  - Ensure all tests pass, ask the user if questions arise.
+- [x] 15. Implement missing MCP tools for complete feature coverage
+  - [x] 15.1 Implement debugger_step_into tool
+    - Accept session ID
+    - Execute step into operation
+    - Return new execution location
+    - _Requirements: 2.4, 9.1_
 
-- [ ] 16. Create test fixtures and integration tests
-  - [ ] 16.1 Create test fixture files
+  - [x] 15.2 Implement debugger_step_out tool
+    - Accept session ID
+    - Execute step out operation
+    - Return new execution location
+    - _Requirements: 2.5, 9.1_
+
+  - [x] 15.3 Implement debugger_pause tool
+    - Accept session ID
+    - Pause running execution
+    - Return current execution location
+    - _Requirements: 2.6, 9.1_
+
+  - [x] 15.4 Implement debugger_remove_breakpoint tool
+    - Accept session ID and breakpoint ID
+    - Remove breakpoint from session
+    - Return success status
+    - _Requirements: 1.4, 9.1_
+
+  - [x] 15.5 Implement debugger_toggle_breakpoint tool
+    - Accept session ID and breakpoint ID
+    - Toggle breakpoint enabled/disabled state
+    - Return updated breakpoint status
+    - _Requirements: 1.5, 9.1_
+
+  - [x] 15.6 Implement debugger_list_breakpoints tool
+    - Accept session ID
+    - Return all breakpoints for session
+    - Include file, line, condition, and enabled state
+    - _Requirements: 1.3, 9.1_
+
+  - [x] 15.7 Implement debugger_get_local_variables tool
+    - Accept session ID
+    - Return all local variables in current scope
+    - Include variable names, values, and types
+    - _Requirements: 3.1, 9.1, 9.3_
+
+  - [x] 15.8 Implement debugger_get_global_variables tool
+    - Accept session ID
+    - Return global variables accessible from current scope
+    - Include variable names, values, and types
+    - _Requirements: 3.2, 9.1, 9.3_
+
+  - [x] 15.9 Implement debugger_inspect_object tool
+    - Accept session ID and object reference
+    - Return object properties with values
+    - Handle nested objects and arrays
+    - Limit depth to prevent performance issues
+    - _Requirements: 3.3, 9.1, 9.3_
+
+  - [x] 15.10 Implement debugger_add_watch tool
+    - Accept session ID and expression
+    - Add expression to watch list
+    - Return watch ID
+    - _Requirements: 3.5, 9.1_
+
+  - [x] 15.11 Implement debugger_remove_watch tool
+    - Accept session ID and watch ID
+    - Remove expression from watch list
+    - Return success status
+    - _Requirements: 3.5, 9.1_
+
+  - [x] 15.12 Implement debugger_get_watches tool
+    - Accept session ID
+    - Return all watched expressions with current values
+    - Detect and report value changes
+    - _Requirements: 3.5, 9.1_
+
+  - [x] 15.13 Implement debugger_switch_stack_frame tool
+    - Accept session ID and frame index
+    - Switch context to specified stack frame
+    - Return frame details
+    - _Requirements: 4.2, 9.1_
+
+  - [x] 15.14 Implement debugger_stop_session tool
+    - Accept session ID
+    - Stop debug session and cleanup resources
+    - Kill process if still running
+    - Return cleanup status
+    - _Requirements: 8.2, 9.1_
+
+- [-] 16. Expand E2E tests for complete coverage
+  - [ ] 16.1 Add E2E tests for step operations
+    - Test debugger_step_into
+    - Test debugger_step_out
+    - Test debugger_pause
+    - Verify execution flow is maintained
+    - _Requirements: 2.4, 2.5, 2.6_
+
+  - [ ] 16.2 Add E2E tests for breakpoint management
+    - Test debugger_list_breakpoints
+    - Test debugger_remove_breakpoint
+    - Test debugger_toggle_breakpoint
+    - Test conditional breakpoints
+    - Verify breakpoint state consistency
+    - _Requirements: 1.2, 1.3, 1.4, 1.5_
+
+  - [ ] 16.3 Add E2E tests for variable inspection
+    - Test debugger_get_local_variables
+    - Test debugger_get_global_variables
+    - Test debugger_inspect_object with nested objects
+    - Test complex object serialization
+    - _Requirements: 3.1, 3.2, 3.3, 9.3_
+
+  - [ ] 16.4 Add E2E tests for variable watching
+    - Test debugger_add_watch
+    - Test debugger_remove_watch
+    - Test debugger_get_watches
+    - Verify value change detection
+    - _Requirements: 3.5_
+
+  - [ ] 16.5 Add E2E tests for stack frame navigation
+    - Test debugger_switch_stack_frame
+    - Test variable inspection in different frames
+    - Verify frame context switching
+    - _Requirements: 4.2, 4.3_
+
+  - [ ] 16.6 Add E2E tests for session management
+    - Test debugger_stop_session
+    - Test multiple concurrent sessions
+    - Verify session isolation
+    - Test resource cleanup
+    - _Requirements: 8.2, 8.5_
+
+  - [ ] 16.7 Add E2E tests for crash detection
+    - Test process crash handling
+    - Verify automatic cleanup on crash
+    - Test error reporting
+    - _Requirements: 8.1_
+
+- [ ] 17. Create test fixtures and integration tests
+  - [ ] 17.1 Create test fixture files
     - Create infinite-loop.js for hang detection testing
     - Create async-hang.js for async hang testing
     - Create normal-completion.js for successful execution
     - Create typescript-sample.ts for source map testing
     - _Requirements: 5.4, 7.1_
 
-  - [ ] 16.2 Write integration test for hang detection
+  - [ ] 17.2 Write integration test for hang detection
     - Test detecting infinite loops
     - Test detecting async hangs
     - Test normal completion without false positives
     - _Requirements: 5.1, 5.4_
 
-  - [ ] 16.3 Write integration test for TypeScript debugging
+  - [ ] 17.3 Write integration test for TypeScript debugging
     - Test setting breakpoints in TypeScript files
     - Test source map location mapping
     - Test variable inspection with TypeScript names
     - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
-  - [ ] 16.4 Write integration test for test framework integration
+  - [ ] 17.4 Write integration test for test framework integration
     - Test running Jest tests with debugger
     - Test capturing test output
     - Test reporting test failures
     - _Requirements: 6.1, 6.4, 6.5_
 
-- [ ] 17. Create MCP configuration and documentation
-  - [ ] 17.1 Create MCP configuration file
+- [ ] 18. Create MCP configuration and documentation
+  - [ ] 18.1 Create MCP configuration file
     - Add debugger server to .kiro/settings/mcp.json
     - Configure command and args for server startup
     - Test MCP connection from Kiro
     - _Requirements: 9.1_
 
-  - [ ] 17.2 Write README documentation
+  - [ ] 18.2 Write README documentation
     - Document installation instructions
-    - Provide usage examples for each tool
+    - Provide usage examples for each tool (now 17 tools total)
     - Document common debugging scenarios
     - Add troubleshooting section
     - _Requirements: 9.2_
 
-  - [ ] 17.3 Add code documentation
+  - [ ] 18.3 Add code documentation
     - Add JSDoc comments to all public APIs
     - Document CDP protocol interactions
     - Document error codes and meanings
     - _Requirements: 9.2_
 
-  - [ ] 17.4 Create AI Agent Integration Documentation
+  - [ ] 18.4 Create AI Agent Integration Documentation
     - Document MCP server configuration for Kiro/Amazon Q
     - Create workflow examples for common debugging scenarios
     - Document tool schemas with parameter descriptions
     - Add troubleshooting guide for AI agent integration
     - _Requirements: 9.2_
 
-  - [ ] 17.5 Create VS Code Extension Documentation
+  - [ ] 18.5 Create VS Code Extension Documentation
     - Document VS Code extension installation and setup
     - Create debugging workflow examples for VS Code
     - Document GitHub Copilot integration patterns
     - Add configuration examples for different project types
     - _Requirements: 9.2_
 
-  - [ ] 17.6 Create Tool Reference Documentation
-    - Document all 10 MCP tools with complete schemas
+  - [ ] 18.6 Create Tool Reference Documentation
+    - Document all 17 MCP tools with complete schemas
     - Provide usage examples for each tool
     - Document error codes and responses
     - Create debugging scenario walkthroughs
     - _Requirements: 9.2_
 
-- [ ] 18. Final checkpoint - Ensure all tests pass
+- [ ] 19. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Enterprise-Grade Enhancements
 
-- [ ] 19. Implement advanced breakpoint types
-  - [ ] 19.1 Implement logpoints (non-breaking breakpoints)
+- [ ] 20. Implement advanced breakpoint types
+  - [ ] 20.1 Implement logpoints (non-breaking breakpoints)
     - Add logpoint type to breakpoint definitions
     - Implement log message template evaluation
     - Log to output without pausing execution
     - Support variable interpolation in log messages
     - _Requirements: Enhanced debugging capabilities_
 
-  - [ ] 19.2 Implement exception breakpoints
+  - [ ] 20.2 Implement exception breakpoints
     - Add exception breakpoint configuration
     - Break on caught exceptions (optional)
     - Break on uncaught exceptions
@@ -501,48 +634,48 @@
     - Capture exception details and stack trace
     - _Requirements: Enhanced debugging capabilities_
 
-  - [ ] 19.3 Implement hit count breakpoints
+  - [ ] 20.3 Implement hit count breakpoints
     - Add hit count condition to breakpoints
     - Track breakpoint hit counts per session
     - Support operators (==, >, >=, <, <=, %)
     - Reset hit counts on session restart
     - _Requirements: Enhanced debugging capabilities_
 
-  - [ ] 19.4 Implement function breakpoints
+  - [ ] 20.4 Implement function breakpoints
     - Break on function entry by name
     - Support regex patterns for function matching
     - Handle anonymous and arrow functions
     - _Requirements: Enhanced debugging capabilities_
 
-  - [ ] 19.5 Add MCP tools for advanced breakpoints
+  - [ ] 20.5 Add MCP tools for advanced breakpoints
     - Implement debugger_set_logpoint tool
     - Implement debugger_set_exception_breakpoint tool
     - Implement debugger_set_function_breakpoint tool
     - Update debugger_set_breakpoint to support hit counts
     - _Requirements: Enhanced debugging capabilities_
 
-- [ ] 20. Implement security and compliance features
-  - [ ] 20.1 Add authentication support
+- [ ] 21. Implement security and compliance features
+  - [ ] 21.1 Add authentication support
     - Implement token-based authentication for MCP connections
     - Support API key validation
     - Add session token management
     - _Requirements: Enterprise security_
 
-  - [ ] 20.2 Implement rate limiting
+  - [ ] 21.2 Implement rate limiting
     - Add rate limiting for debugging operations
     - Configure limits per operation type
     - Return appropriate error responses when limits exceeded
     - Track rate limit metrics
     - _Requirements: Enterprise security_
 
-  - [ ] 20.3 Implement sensitive data masking
+  - [ ] 21.3 Implement sensitive data masking
     - Detect common PII patterns (emails, SSNs, credit cards)
     - Mask sensitive values in variable inspection
     - Add configurable masking rules
     - Provide opt-out for trusted environments
     - _Requirements: Enterprise security_
 
-  - [ ] 20.4 Add session timeout enforcement
+  - [ ] 21.4 Add session timeout enforcement
     - Implement configurable session timeouts
     - Auto-cleanup expired sessions
     - Send timeout warnings before expiration
@@ -555,15 +688,15 @@
     - Implement log rotation and retention policies
     - _Requirements: Enterprise security_
 
-- [ ] 21. Implement observability and telemetry
-  - [ ] 21.1 Add structured logging
+- [ ] 22. Implement observability and telemetry
+  - [ ] 22.1 Add structured logging
     - Implement log levels (debug, info, warn, error)
     - Use structured logging format (JSON)
     - Add correlation IDs for request tracing
     - Include context (session ID, operation type)
     - _Requirements: Enterprise observability_
 
-  - [ ] 21.2 Implement metrics collection
+  - [ ] 22.2 Implement metrics collection
     - Track session duration and count
     - Track breakpoint hit counts
     - Track operation latencies
@@ -571,94 +704,94 @@
     - Expose metrics endpoint
     - _Requirements: Enterprise observability_
 
-  - [ ] 21.3 Add health check endpoints
+  - [ ] 22.3 Add health check endpoints
     - Implement /health endpoint
     - Implement /ready endpoint (readiness probe)
     - Implement /live endpoint (liveness probe)
     - Include dependency health checks
     - _Requirements: Production readiness_
 
-  - [ ] 21.4 Implement session recording (optional)
+  - [ ] 22.4 Implement session recording (optional)
     - Record debugging session events
     - Support session replay for debugging
     - Add privacy controls for recording
     - Implement storage management for recordings
     - _Requirements: Advanced observability_
 
-- [ ] 22. Implement performance profiling features
-  - [ ] 22.1 Add CPU profiling support
+- [ ] 23. Implement performance profiling features
+  - [ ] 23.1 Add CPU profiling support
     - Use Profiler.start/stop CDP commands
     - Capture CPU profile data
     - Generate flame graphs or call trees
     - Provide profile analysis and bottleneck detection
     - _Requirements: Performance debugging_
 
-  - [ ] 22.2 Add memory profiling support
+  - [ ] 23.2 Add memory profiling support
     - Capture heap snapshots via HeapProfiler domain
     - Track memory allocation over time
     - Detect memory leaks via heap growth analysis
     - Provide memory usage reports
     - _Requirements: Performance debugging_
 
-  - [ ] 22.3 Implement performance timeline
+  - [ ] 23.3 Implement performance timeline
     - Record performance events during execution
     - Track function execution times
     - Identify slow operations
     - Generate performance reports
     - _Requirements: Performance debugging_
 
-  - [ ] 22.4 Add MCP tools for profiling
+  - [ ] 23.4 Add MCP tools for profiling
     - Implement debugger_start_cpu_profile tool
     - Implement debugger_stop_cpu_profile tool
     - Implement debugger_take_heap_snapshot tool
     - Implement debugger_get_performance_metrics tool
     - _Requirements: Performance debugging_
 
-- [ ] 23. Implement production readiness features
-  - [ ] 23.1 Add graceful shutdown handling
+- [ ] 24. Implement production readiness features
+  - [ ] 24.1 Add graceful shutdown handling
     - Handle SIGTERM and SIGINT signals
     - Complete in-flight operations before shutdown
     - Clean up all active sessions
     - Close all connections gracefully
     - _Requirements: Production readiness_
 
-  - [ ] 23.2 Implement circuit breakers
+  - [ ] 24.2 Implement circuit breakers
     - Add circuit breakers for CDP operations
     - Configure failure thresholds
     - Implement automatic recovery
     - Provide circuit breaker status monitoring
     - _Requirements: Production readiness_
 
-  - [ ] 23.3 Add retry logic with exponential backoff
+  - [ ] 24.3 Add retry logic with exponential backoff
     - Implement retry for transient failures
     - Use exponential backoff strategy
     - Configure max retry attempts
     - Add jitter to prevent thundering herd
     - _Requirements: Production readiness_
 
-  - [ ] 23.4 Implement resource limits and quotas
+  - [ ] 24.4 Implement resource limits and quotas
     - Limit max concurrent sessions per user
     - Limit max breakpoints per session
     - Limit max memory usage per session
     - Enforce timeout limits
     - _Requirements: Production readiness_
 
-  - [ ] 23.5 Add Prometheus metrics export
+  - [ ] 24.5 Add Prometheus metrics export
     - Export metrics in Prometheus format
     - Include standard metrics (requests, latency, errors)
     - Include custom debugging metrics
     - Add metric labels for filtering
     - _Requirements: Production readiness_
 
-- [ ] 24. Enhanced testing for enterprise features
-  - [ ] 24.1 Implement load testing
+- [ ] 25. Enhanced testing for enterprise features
+  - [ ] 25.1 Implement load testing
     - Test with 100+ concurrent debug sessions
     - Measure throughput and latency under load
     - Identify performance bottlenecks
     - Test resource cleanup under load
     - _Requirements: Enterprise quality_
 
-  - [ ] 24.2 Implement chaos testing
+  - [ ] 25.2 Implement chaos testing
     - Test random process crashes
     - Test network disconnections
     - Test CDP protocol errors
@@ -666,14 +799,14 @@
     - Verify graceful degradation
     - _Requirements: Enterprise quality_
 
-  - [ ] 24.3 Add compatibility testing
+  - [ ] 25.3 Add compatibility testing
     - Test with Node.js 16, 18, 20, 22
     - Test with TypeScript 4.x and 5.x
     - Test with different test frameworks
     - Test on different operating systems
     - _Requirements: Enterprise quality_
 
-  - [ ] 24.4 Implement security testing
+  - [ ] 25.4 Implement security testing
     - Test authentication and authorization
     - Test rate limiting effectiveness
     - Test PII masking accuracy
@@ -681,48 +814,48 @@
     - Test for common vulnerabilities
     - _Requirements: Enterprise quality_
 
-  - [ ] 24.5 Add performance benchmarks
+  - [ ] 25.5 Add performance benchmarks
     - Benchmark breakpoint set/remove operations
     - Benchmark variable inspection latency
     - Benchmark session creation/cleanup
     - Track performance regression in CI
     - _Requirements: Enterprise quality_
 
-- [ ] 25. Developer experience enhancements
-  - [ ] 25.1 Add debugging configuration presets
+- [ ] 26. Developer experience enhancements
+  - [ ] 26.1 Add debugging configuration presets
     - Create presets for common scenarios (Node.js app, Jest tests, etc.)
     - Support custom preset definitions
     - Allow preset inheritance and composition
     - _Requirements: Enhanced DX_
 
-  - [ ] 25.2 Implement workspace-aware debugging
+  - [ ] 26.2 Implement workspace-aware debugging
     - Support monorepo debugging
     - Auto-detect workspace structure
     - Handle multiple package.json files
     - Support workspace-relative paths
     - _Requirements: Enhanced DX_
 
-  - [ ] 25.3 Add multi-target debugging support
+  - [ ] 26.3 Add multi-target debugging support
     - Debug multiple processes simultaneously
     - Coordinate breakpoints across targets
     - Aggregate logs from multiple targets
     - Support parent-child process debugging
     - _Requirements: Enhanced DX_
 
-  - [ ] 25.4 Implement smart breakpoint suggestions
+  - [ ] 26.4 Implement smart breakpoint suggestions
     - Suggest breakpoint locations based on code analysis
     - Recommend breakpoints for common debugging scenarios
     - Suggest conditional breakpoints based on context
     - _Requirements: Enhanced DX_
 
-  - [ ] 25.5 Add variable formatting customization
+  - [ ] 26.5 Add variable formatting customization
     - Support custom formatters for types
     - Add pretty-printing options
     - Support truncation and depth limits
     - Allow user-defined display rules
     - _Requirements: Enhanced DX_
 
-- [ ] 26. Final enterprise checkpoint
+- [ ] 27. Final enterprise checkpoint
   - Ensure all enterprise features are tested
   - Verify security features are working correctly
   - Confirm observability and monitoring are operational

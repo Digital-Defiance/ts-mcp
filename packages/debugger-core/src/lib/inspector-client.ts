@@ -1,4 +1,4 @@
-import WebSocket from 'ws';
+import WebSocket = require('ws');
 import { EventEmitter } from 'events';
 
 /**

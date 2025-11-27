@@ -44,6 +44,20 @@ export class McpDebuggerServer {
     this.registerDebuggerSetBreakpoint();
     this.registerDebuggerContinue();
     this.registerDebuggerStepOver();
+    this.registerDebuggerStepInto();
+    this.registerDebuggerStepOut();
+    this.registerDebuggerPause();
+    this.registerDebuggerRemoveBreakpoint();
+    this.registerDebuggerToggleBreakpoint();
+    this.registerDebuggerListBreakpoints();
+    this.registerDebuggerGetLocalVariables();
+    this.registerDebuggerGetGlobalVariables();
+    this.registerDebuggerInspectObject();
+    this.registerDebuggerAddWatch();
+    this.registerDebuggerRemoveWatch();
+    this.registerDebuggerGetWatches();
+    this.registerDebuggerSwitchStackFrame();
+    this.registerDebuggerStopSession();
     this.registerDebuggerInspect();
     this.registerDebuggerGetStack();
     this.registerDebuggerDetectHang();
@@ -652,6 +666,1430 @@ export class McpDebuggerServer {
                   {
                     status: 'error',
                     code: 'HANG_DETECTION_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_step_into
+   * Step into the current line
+   * Requirements: 2.4, 9.1
+   */
+  private registerDebuggerStepInto(): void {
+    this.server.registerTool(
+      'debugger_step_into',
+      {
+        description:
+          'Execute the current line and pause at the first line inside any called function.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          await session.stepInto();
+
+          // Wait a bit for the paused event to populate call frames
+          await new Promise((resolve) => setTimeout(resolve, 100));
+
+          const stack = await session.getCallStack();
+          const location =
+            stack.length > 0
+              ? { file: stack[0].file, line: stack[0].line }
+              : null;
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    state: session.getState(),
+                    location,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'STEP_INTO_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_step_out
+   * Step out of the current function
+   * Requirements: 2.5, 9.1
+   */
+  private registerDebuggerStepOut(): void {
+    this.server.registerTool(
+      'debugger_step_out',
+      {
+        description:
+          'Execute until the current function returns and pause at the calling location.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          await session.stepOut();
+
+          // Wait a bit for the paused event to populate call frames
+          await new Promise((resolve) => setTimeout(resolve, 100));
+
+          const stack = await session.getCallStack();
+          const location =
+            stack.length > 0
+              ? { file: stack[0].file, line: stack[0].line }
+              : null;
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    state: session.getState(),
+                    location,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'STEP_OUT_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_pause
+   * Pause running execution
+   * Requirements: 2.6, 9.1
+   */
+  private registerDebuggerPause(): void {
+    this.server.registerTool(
+      'debugger_pause',
+      {
+        description:
+          'Pause a running debug session and return the current execution location.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          await session.pause();
+
+          const stack = await session.getCallStack();
+          const location =
+            stack.length > 0
+              ? { file: stack[0].file, line: stack[0].line }
+              : null;
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    state: session.getState(),
+                    location,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'PAUSE_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_remove_breakpoint
+   * Remove a breakpoint from the session
+   * Requirements: 1.4, 9.1
+   */
+  private registerDebuggerRemoveBreakpoint(): void {
+    this.server.registerTool(
+      'debugger_remove_breakpoint',
+      {
+        description: 'Remove a breakpoint from the debug session.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+          breakpointId: z.string().describe('The breakpoint ID to remove'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          const removed = await session.removeBreakpoint(args.breakpointId);
+
+          if (!removed) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'BREAKPOINT_NOT_FOUND',
+                      message: `Breakpoint ${args.breakpointId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    breakpointId: args.breakpointId,
+                    removed: true,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'REMOVE_BREAKPOINT_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_toggle_breakpoint
+   * Toggle a breakpoint's enabled state
+   * Requirements: 1.5, 9.1
+   */
+  private registerDebuggerToggleBreakpoint(): void {
+    this.server.registerTool(
+      'debugger_toggle_breakpoint',
+      {
+        description: 'Toggle a breakpoint between enabled and disabled states.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+          breakpointId: z.string().describe('The breakpoint ID to toggle'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          const breakpoint = await session.toggleBreakpoint(args.breakpointId);
+
+          if (!breakpoint) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'BREAKPOINT_NOT_FOUND',
+                      message: `Breakpoint ${args.breakpointId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    breakpointId: breakpoint.id,
+                    file: breakpoint.file,
+                    line: breakpoint.line,
+                    condition: breakpoint.condition,
+                    enabled: breakpoint.enabled,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'TOGGLE_BREAKPOINT_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_list_breakpoints
+   * List all breakpoints in the session
+   * Requirements: 1.3, 9.1
+   */
+  private registerDebuggerListBreakpoints(): void {
+    this.server.registerTool(
+      'debugger_list_breakpoints',
+      {
+        description:
+          'Get all breakpoints for a debug session with their file, line, condition, and enabled state.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          const breakpoints = session.getAllBreakpoints();
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    breakpoints: breakpoints.map((bp) => ({
+                      id: bp.id,
+                      file: bp.file,
+                      line: bp.line,
+                      condition: bp.condition,
+                      enabled: bp.enabled,
+                      verified: !!bp.cdpBreakpointId,
+                    })),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'LIST_BREAKPOINTS_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_get_local_variables
+   * Get all local variables in the current scope
+   * Requirements: 3.1, 9.1, 9.3
+   */
+  private registerDebuggerGetLocalVariables(): void {
+    this.server.registerTool(
+      'debugger_get_local_variables',
+      {
+        description:
+          'Get all local variables in the current scope with their names, values, and types.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          if (!session.isPaused()) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'NOT_PAUSED',
+                      message: 'Process must be paused to get local variables',
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          const callFrames = session.getCurrentCallFrames();
+          if (!callFrames || callFrames.length === 0) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'success',
+                      variables: [],
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+            };
+          }
+
+          const currentFrame = callFrames[session.getCurrentFrameIndex()];
+          const scopeChain = currentFrame.scopeChain || [];
+
+          // Get local scope (first scope in chain is usually local)
+          const localScope = scopeChain.find(
+            (scope: any) => scope.type === 'local',
+          );
+
+          if (!localScope || !localScope.object?.objectId) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'success',
+                      variables: [],
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+            };
+          }
+
+          const properties = await session.getObjectProperties(
+            localScope.object.objectId,
+          );
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    variables: properties.map((prop) => ({
+                      name: prop.name,
+                      value: prop.value,
+                      type: prop.type,
+                    })),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'GET_LOCAL_VARIABLES_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_get_global_variables
+   * Get global variables accessible from the current scope
+   * Requirements: 3.2, 9.1, 9.3
+   */
+  private registerDebuggerGetGlobalVariables(): void {
+    this.server.registerTool(
+      'debugger_get_global_variables',
+      {
+        description:
+          'Get global variables accessible from the current scope with their names, values, and types.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          if (!session.isPaused()) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'NOT_PAUSED',
+                      message: 'Process must be paused to get global variables',
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          const callFrames = session.getCurrentCallFrames();
+          if (!callFrames || callFrames.length === 0) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'success',
+                      variables: [],
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+            };
+          }
+
+          const currentFrame = callFrames[session.getCurrentFrameIndex()];
+          const scopeChain = currentFrame.scopeChain || [];
+
+          // Get global scope (last scope in chain is usually global)
+          const globalScope = scopeChain.find(
+            (scope: any) => scope.type === 'global',
+          );
+
+          if (!globalScope || !globalScope.object?.objectId) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'success',
+                      variables: [],
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+            };
+          }
+
+          const properties = await session.getObjectProperties(
+            globalScope.object.objectId,
+          );
+
+          // Filter out built-in globals to reduce noise
+          const userGlobals = properties.filter(
+            (prop) =>
+              !['console', 'process', 'Buffer', 'global', 'require'].includes(
+                prop.name,
+              ),
+          );
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    variables: userGlobals.map((prop) => ({
+                      name: prop.name,
+                      value: prop.value,
+                      type: prop.type,
+                    })),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'GET_GLOBAL_VARIABLES_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_inspect_object
+   * Inspect an object's properties with nested resolution
+   * Requirements: 3.3, 9.1, 9.3
+   */
+  private registerDebuggerInspectObject(): void {
+    this.server.registerTool(
+      'debugger_inspect_object',
+      {
+        description:
+          'Inspect an object by its object reference, returning properties with values. Handles nested objects and arrays up to a specified depth.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+          objectId: z
+            .string()
+            .describe(
+              'The object ID (from a previous inspection or evaluation)',
+            ),
+          maxDepth: z
+            .number()
+            .optional()
+            .describe('Maximum depth to traverse (default: 2)'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          if (!session.isPaused()) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'NOT_PAUSED',
+                      message: 'Process must be paused to inspect objects',
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          const maxDepth = args.maxDepth || 2;
+          const objectData = await session.inspectObject(
+            args.objectId,
+            maxDepth,
+          );
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    objectId: args.objectId,
+                    properties: objectData,
+                    maxDepth,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'INSPECT_OBJECT_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_add_watch
+   * Add a watched expression
+   * Requirements: 3.5, 9.1
+   */
+  private registerDebuggerAddWatch(): void {
+    this.server.registerTool(
+      'debugger_add_watch',
+      {
+        description:
+          'Add an expression to the watch list. The expression will be evaluated each time the process pauses.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+          expression: z
+            .string()
+            .describe('The expression to watch (e.g., "x", "obj.prop")'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          // Use expression as the watch ID/name
+          const watchId = args.expression;
+
+          session.addWatchedVariable({
+            name: watchId,
+            expression: args.expression,
+          });
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    watchId,
+                    expression: args.expression,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'ADD_WATCH_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_remove_watch
+   * Remove a watched expression
+   * Requirements: 3.5, 9.1
+   */
+  private registerDebuggerRemoveWatch(): void {
+    this.server.registerTool(
+      'debugger_remove_watch',
+      {
+        description: 'Remove an expression from the watch list.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+          watchId: z.string().describe('The watch ID (expression) to remove'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          const removed = session.removeWatchedVariable(args.watchId);
+
+          if (!removed) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'WATCH_NOT_FOUND',
+                      message: `Watch ${args.watchId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    watchId: args.watchId,
+                    removed: true,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'REMOVE_WATCH_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_get_watches
+   * Get all watched expressions with their current values
+   * Requirements: 3.5, 9.1
+   */
+  private registerDebuggerGetWatches(): void {
+    this.server.registerTool(
+      'debugger_get_watches',
+      {
+        description:
+          'Get all watched expressions with their current values. Reports value changes since the last pause.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          const watches = session.getAllWatchedVariables();
+          const changes = session.getWatchedVariableChanges();
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    watches: watches.map((watch) => ({
+                      watchId: watch.name,
+                      expression: watch.expression,
+                      value: watch.lastValue,
+                      changed: changes.has(watch.name),
+                      oldValue: changes.get(watch.name)?.oldValue,
+                      newValue: changes.get(watch.name)?.newValue,
+                    })),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'GET_WATCHES_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_switch_stack_frame
+   * Switch context to a different stack frame
+   * Requirements: 4.2, 9.1
+   */
+  private registerDebuggerSwitchStackFrame(): void {
+    this.server.registerTool(
+      'debugger_switch_stack_frame',
+      {
+        description:
+          'Switch the execution context to a specific stack frame by index. Frame 0 is the top frame (current location).',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+          frameIndex: z
+            .number()
+            .describe('The frame index (0 = top frame, 1 = caller, etc.)'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          session.switchToFrame(args.frameIndex);
+
+          const stack = await session.getCallStack();
+          const frame = stack[args.frameIndex];
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    frameIndex: args.frameIndex,
+                    frame: frame
+                      ? {
+                          function: frame.functionName,
+                          file: frame.file,
+                          line: frame.line,
+                          column: frame.column,
+                        }
+                      : null,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'SWITCH_FRAME_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_stop_session
+   * Stop a debug session and cleanup resources
+   * Requirements: 8.2, 9.1
+   */
+  private registerDebuggerStopSession(): void {
+    this.server.registerTool(
+      'debugger_stop_session',
+      {
+        description:
+          'Stop a debug session, cleanup all resources, and kill the process if still running.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          await this.sessionManager.removeSession(args.sessionId);
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    sessionId: args.sessionId,
+                    stopped: true,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'STOP_SESSION_FAILED',
                     message:
                       error instanceof Error ? error.message : String(error),
                   },
