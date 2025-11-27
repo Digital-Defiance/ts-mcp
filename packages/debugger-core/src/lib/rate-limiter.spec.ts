@@ -239,5 +239,60 @@ describe('RateLimiter', () => {
       expect(limiter.hasLimit('operation1')).toBe(false);
       expect(limiter.hasLimit('operation2')).toBe(false);
     });
+
+    it('should return false when resetting non-existent operation', () => {
+      const limiter = new RateLimiter();
+
+      expect(limiter.reset('non-existent', 'user1')).toBe(false);
+    });
+
+    it('should return false when resetting all for non-existent operation', () => {
+      const limiter = new RateLimiter();
+
+      expect(limiter.resetAll('non-existent')).toBe(false);
+    });
+
+    it('should return null metrics for non-existent operation', () => {
+      const limiter = new RateLimiter();
+
+      const metrics = limiter.getMetrics('non-existent');
+      expect(metrics).toBeNull();
+    });
+
+    it('should handle default identifier', () => {
+      const limiter = new RateLimiter();
+      limiter.setLimit('test_operation', { maxRequests: 2, windowMs: 1000 });
+
+      // Use default identifier
+      limiter.checkLimit('test_operation');
+      limiter.checkLimit('test_operation');
+
+      expect(() => limiter.checkLimit('test_operation')).toThrow(
+        RateLimitError,
+      );
+
+      const status = limiter.getStatus('test_operation');
+      expect(status).not.toBeNull();
+      expect(status!.count).toBe(3);
+    });
+
+    it('should handle metrics with no entries', () => {
+      const limiter = new RateLimiter();
+      limiter.setLimit('test_operation', { maxRequests: 10, windowMs: 1000 });
+
+      const metrics = limiter.getMetrics('test_operation');
+      expect(metrics).not.toBeNull();
+      expect(metrics!.currentWindow.count).toBe(0);
+    });
+
+    it('should handle status for new identifier', () => {
+      const limiter = new RateLimiter();
+      limiter.setLimit('test_operation', { maxRequests: 10, windowMs: 1000 });
+
+      const status = limiter.getStatus('test_operation', 'new-user');
+      expect(status).not.toBeNull();
+      expect(status!.count).toBe(0);
+      expect(status!.limit).toBe(10);
+    });
   });
 });

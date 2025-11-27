@@ -379,4 +379,105 @@ describe('SessionTimeoutManager', () => {
       expect(timeoutCalled).toBe(false);
     });
   });
+
+  describe('Edge Cases', () => {
+    it('should handle unregistering non-existent session', () => {
+      const manager = new SessionTimeoutManager({
+        enabled: true,
+        timeoutMs: 5000,
+      });
+
+      expect(() => manager.unregisterSession('non-existent')).not.toThrow();
+    });
+
+    it('should handle updating activity for non-existent session', () => {
+      const manager = new SessionTimeoutManager({
+        enabled: true,
+        timeoutMs: 5000,
+      });
+
+      expect(() => manager.updateActivity('non-existent')).not.toThrow();
+    });
+
+    it('should handle warning without configured warningMs', async () => {
+      const manager = new SessionTimeoutManager({
+        enabled: true,
+        timeoutMs: 200,
+        warningMs: 300, // Warning time greater than timeout
+      });
+
+      let warningCalled = false;
+
+      manager.onWarning(() => {
+        warningCalled = true;
+      });
+
+      manager.registerSession('session1');
+
+      // Wait for timeout
+      await new Promise((resolve) => setTimeout(resolve, 250));
+
+      // Warning should not be called since warningMs > timeoutMs
+      expect(warningCalled).toBe(false);
+    });
+
+    it('should handle errors in timeout handlers gracefully', async () => {
+      const manager = new SessionTimeoutManager({
+        enabled: true,
+        timeoutMs: 100,
+      });
+
+      manager.onTimeout(() => {
+        throw new Error('Handler error');
+      });
+
+      manager.registerSession('session1');
+
+      // Wait for timeout - should not throw
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      // Session should still be removed despite handler error
+      expect(manager.hasSession('session1')).toBe(false);
+    });
+
+    it('should handle errors in warning handlers gracefully', async () => {
+      const manager = new SessionTimeoutManager({
+        enabled: true,
+        timeoutMs: 200,
+        warningMs: 100,
+      });
+
+      manager.onWarning(() => {
+        throw new Error('Warning handler error');
+      });
+
+      manager.registerSession('session1');
+
+      // Wait for warning - should not throw
+      await new Promise((resolve) => setTimeout(resolve, 120));
+
+      // Session should still exist
+      expect(manager.hasSession('session1')).toBe(true);
+    });
+
+    it('should handle activity update with new timers', async () => {
+      const manager = new SessionTimeoutManager({
+        enabled: true,
+        timeoutMs: 200,
+        warningMs: 100,
+      });
+
+      manager.registerSession('session1');
+
+      // Wait a bit
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Update activity - should reset both timers
+      manager.updateActivity('session1');
+
+      const info = manager.getSessionInfo('session1');
+      expect(info).not.toBeNull();
+      expect(info!.remainingMs).toBeGreaterThan(150);
+    });
+  });
 });

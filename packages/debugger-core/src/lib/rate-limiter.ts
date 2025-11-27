@@ -52,6 +52,16 @@ export class RateLimiter {
     string,
     { requestCount: number; limitExceeded: number }
   >();
+  private defaultConfig?: RateLimitConfig;
+  private defaultEntries = new Map<string, RateLimitEntry>();
+
+  /**
+   * Create a new RateLimiter
+   * @param defaultConfig Optional default rate limit configuration
+   */
+  constructor(defaultConfig?: RateLimitConfig) {
+    this.defaultConfig = defaultConfig;
+  }
 
   /**
    * Configure rate limit for an operation type
@@ -70,21 +80,31 @@ export class RateLimiter {
 
   /**
    * Check if a request is allowed under rate limits
-   * @param operationType The operation type
-   * @param identifier Unique identifier for the requester (e.g., session ID, user ID)
-   * @returns True if the request is allowed
-   * @throws RateLimitError if the rate limit is exceeded
+   * @param operationTypeOrIdentifier The operation type, or identifier if using default config
+   * @param identifier Optional unique identifier for the requester (e.g., session ID, user ID)
+   * @returns Object with allowed status and retryAfter time
    */
-  checkLimit(operationType: string, identifier: string = 'default'): boolean {
+  checkLimit(
+    operationTypeOrIdentifier: string,
+    identifier?: string,
+  ): { allowed: boolean; retryAfter?: number } {
+    // If only one argument and default config exists, treat it as identifier
+    if (identifier === undefined && this.defaultConfig) {
+      return this.checkDefaultLimit(operationTypeOrIdentifier);
+    }
+
+    const operationType = operationTypeOrIdentifier;
+    const id = identifier || 'default';
+
     const config = this.limits.get(operationType);
     if (!config) {
       // No limit configured for this operation type
-      return true;
+      return { allowed: true };
     }
 
     const entries = this.entries.get(operationType)!;
     const now = new Date();
-    let entry = entries.get(identifier);
+    let entry = entries.get(id);
 
     // Initialize or reset entry if window has passed
     if (!entry || now >= entry.resetAt) {
@@ -92,7 +112,7 @@ export class RateLimiter {
         count: 0,
         resetAt: new Date(now.getTime() + config.windowMs),
       };
-      entries.set(identifier, entry);
+      entries.set(id, entry);
     }
 
     // Increment request count
@@ -108,14 +128,69 @@ export class RateLimiter {
       const retryAfter = Math.ceil(
         (entry.resetAt.getTime() - now.getTime()) / 1000,
       );
-      throw new RateLimitError(
-        `Rate limit exceeded for ${operationType}. Try again in ${retryAfter} seconds.`,
-        operationType,
-        retryAfter,
-      );
+      return { allowed: false, retryAfter };
     }
 
-    return true;
+    return { allowed: true };
+  }
+
+  /**
+   * Check limit using default configuration
+   * @param identifier Unique identifier for the requester
+   * @returns Object with allowed status and retryAfter time
+   */
+  private checkDefaultLimit(identifier: string): {
+    allowed: boolean;
+    retryAfter?: number;
+  } {
+    if (!this.defaultConfig) {
+      return { allowed: true };
+    }
+
+    const now = new Date();
+    let entry = this.defaultEntries.get(identifier);
+
+    // Initialize or reset entry if window has passed
+    if (!entry || now >= entry.resetAt) {
+      entry = {
+        count: 0,
+        resetAt: new Date(now.getTime() + this.defaultConfig.windowMs),
+      };
+      this.defaultEntries.set(identifier, entry);
+    }
+
+    // Increment request count
+    entry.count++;
+
+    // Check if limit is exceeded
+    if (entry.count > this.defaultConfig.maxRequests) {
+      const retryAfter = Math.ceil(
+        (entry.resetAt.getTime() - now.getTime()) / 1000,
+      );
+      return { allowed: false, retryAfter };
+    }
+
+    return { allowed: true };
+  }
+
+  /**
+   * Check if a request is allowed and throw error if not (legacy method)
+   * @param operationType The operation type
+   * @param identifier Unique identifier for the requester
+   * @throws RateLimitError if the rate limit is exceeded
+   */
+  checkLimitOrThrow(
+    operationType: string,
+    identifier: string = 'default',
+  ): void {
+    const result = this.checkLimit(operationType, identifier);
+    if (!result.allowed) {
+      throw new RateLimitError(
+        `Rate limit exceeded for ${operationType}. Try again in ${result.retryAfter} seconds.`,
+        operationType,
+        result.retryAfter || 0,
+      );
+    }
   }
 
   /**

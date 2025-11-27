@@ -146,6 +146,24 @@ export class DataMasker {
   }
 
   /**
+   * Mask sensitive data (works with both strings and objects)
+   * @param data The data to mask (string or object)
+   * @param maxDepth Maximum recursion depth for objects (default: 10)
+   * @returns The masked data
+   */
+  maskData(data: any, maxDepth: number = 10): any {
+    if (!this.config.enabled) {
+      return data;
+    }
+
+    if (typeof data === 'string') {
+      return this.maskString(data);
+    }
+
+    return this.maskObject(data, maxDepth);
+  }
+
+  /**
    * Mask sensitive data in an object
    * Recursively masks all string values in the object
    * @param obj The object to mask

@@ -96,10 +96,7 @@ process.exit(0);
       expect(session.id).toBeTruthy();
 
       // Test basic operations
-      const breakpoint = await session.breakpointManager.setBreakpoint(
-        testFixturePath,
-        1,
-      );
+      const breakpoint = await session.setBreakpoint(testFixturePath, 1);
       expect(breakpoint).toBeDefined();
 
       await sessionManager.removeSession(session.id);
@@ -350,7 +347,7 @@ test('simple test', () => {
       const inspectorSupport = {
         available:
           typeof (global as any).inspector !== 'undefined' ||
-          process.versions.node,
+          !!process.versions.node,
         version: process.version,
         features: {
           debugger: true,

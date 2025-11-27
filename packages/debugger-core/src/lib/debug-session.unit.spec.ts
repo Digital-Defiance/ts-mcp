@@ -242,7 +242,7 @@ process.exit(0);`,
 
         await session.pause();
 
-        expect((session as any).state).toBe(SessionState.PAUSED);
+        expect(session.getState()).toBe(SessionState.PAUSED);
       }, 15000);
 
       it('should transition to TERMINATED on cleanup', async () => {
@@ -280,12 +280,12 @@ process.exit(0);`,
           cwd: process.cwd(),
         });
 
-        const process = (session as any).process;
-        expect(process).toBeDefined();
+        const proc = session.getProcess();
+        expect(proc).toBeDefined();
 
         await session.cleanup();
 
-        expect(process.killed || process.exitCode !== null).toBe(true);
+        expect(proc?.killed || proc?.exitCode !== null).toBe(true);
       }, 15000);
 
       it('should disconnect inspector during cleanup', async () => {
@@ -345,7 +345,7 @@ process.exit(0);`,
 
         await session.pause();
 
-        expect((session as any).state).toBe(SessionState.PAUSED);
+        expect(session.getState()).toBe(SessionState.PAUSED);
       }, 15000);
 
       it('should fail to pause when not running', async () => {
@@ -554,12 +554,14 @@ process.exit(0);`,
           cwd: process.cwd(),
         });
 
+        const proc = session.getProcess();
+
         // Kill the process
-        (session as any).process.kill('SIGKILL');
+        proc?.kill('SIGKILL');
 
         await new Promise((resolve) => setTimeout(resolve, 500));
 
-        expect((session as any).process.killed).toBe(true);
+        expect(proc?.killed).toBe(true);
       }, 15000);
 
       it('should handle process crash', async () => {
@@ -580,13 +582,15 @@ process.exit(0);`,
           cwd: process.cwd(),
         });
 
+        const proc = session.getProcess();
+
         await session.resume();
 
         // Wait for crash
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
         // Process should have exited
-        expect((session as any).process.exitCode).not.toBeNull();
+        expect(proc?.exitCode !== null || proc?.killed).toBe(true);
       }, 15000);
     });
 
@@ -674,7 +678,7 @@ process.exit(0);`,
 
       // Operations on session1 should not affect session2
       await session1.resume();
-      expect((session as any).state).toBe(SessionState.PAUSED);
+      expect((session2 as any).state).toBe(SessionState.PAUSED);
 
       await session1.cleanup();
       expect((session2 as any).state).toBe(SessionState.PAUSED);

@@ -149,4 +149,60 @@ describe('ResourceLimiter', () => {
       expect(usage.watchedVariablesPerSession.size).toBe(0);
     });
   });
+
+  describe('edge cases', () => {
+    it('should handle unregistering session with zero count', () => {
+      limiter.registerSession('user1', 'session1');
+      limiter.unregisterSession('user1', 'session1');
+      limiter.unregisterSession('user1', 'session1'); // Second time
+
+      const usage = limiter.getUsage();
+      expect(usage.sessionsPerUser.get('user1')).toBe(0);
+    });
+
+    it('should handle unregistering breakpoint with zero count', () => {
+      limiter.registerSession('user1', 'session1');
+      limiter.unregisterBreakpoint('session1'); // No breakpoints registered
+
+      const usage = limiter.getUsage();
+      expect(usage.breakpointsPerSession.get('session1')).toBe(0);
+    });
+
+    it('should handle unregistering watched variable with zero count', () => {
+      limiter.registerSession('user1', 'session1');
+      limiter.unregisterWatchedVariable('session1'); // No watched variables registered
+
+      const usage = limiter.getUsage();
+      expect(usage.watchedVariablesPerSession.get('session1')).toBe(0);
+    });
+
+    it('should check session duration for non-existent session', () => {
+      expect(limiter.checkSessionDuration('non-existent')).toBe(false);
+    });
+
+    it('should get limits', () => {
+      const limits = limiter.getLimits();
+      expect(limits.maxSessionsPerUser).toBe(5);
+      expect(limits.maxBreakpointsPerSession).toBe(50);
+      expect(limits.maxMemoryPerSession).toBe(100 * 1024 * 1024);
+      expect(limits.maxSessionDuration).toBe(3600000);
+      expect(limits.maxWatchedVariablesPerSession).toBe(20);
+    });
+
+    it('should track memory usage', () => {
+      limiter.registerSession('user1', 'session1');
+      limiter.updateMemoryUsage('session1', 50 * 1024 * 1024);
+
+      const usage = limiter.getUsage();
+      expect(usage.memoryPerSession.get('session1')).toBe(50 * 1024 * 1024);
+    });
+
+    it('should initialize session with zero breakpoints and watched variables', () => {
+      limiter.registerSession('user1', 'session1');
+
+      const usage = limiter.getUsage();
+      expect(usage.breakpointsPerSession.get('session1')).toBe(0);
+      expect(usage.watchedVariablesPerSession.get('session1')).toBe(0);
+    });
+  });
 });

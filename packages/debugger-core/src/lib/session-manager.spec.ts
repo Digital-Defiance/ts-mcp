@@ -324,4 +324,44 @@ describe('SessionManager', () => {
     // Session should be automatically removed from manager after crash
     expect(manager.hasSession(sessionId)).toBe(false);
   }, 10000);
+
+  it('should return undefined for non-existent session', () => {
+    const session = manager.getSession('non-existent-id');
+    expect(session).toBeUndefined();
+  });
+
+  it('should return false when removing non-existent session', async () => {
+    const removed = await manager.removeSession('non-existent-id');
+    expect(removed).toBe(false);
+  });
+
+  it('should handle errors during session removal', async () => {
+    const testScript = path.join(
+      __dirname,
+      '../../test-fixtures/simple-script.js',
+    );
+
+    const session = await manager.createSession({
+      command: 'node',
+      args: [testScript],
+    });
+
+    // Mock cleanup to throw an error
+    const cleanupSpy = jest
+      .spyOn(session, 'cleanup')
+      .mockRejectedValue(new Error('Cleanup failed'));
+
+    await expect(manager.removeSession(session.id)).rejects.toThrow(
+      'Cleanup failed',
+    );
+
+    // Restore the spy and cleanup properly
+    cleanupSpy.mockRestore();
+    await session.cleanup();
+  }, 10000);
+
+  it('should get audit logger', () => {
+    const auditLogger = manager.getAuditLogger();
+    expect(auditLogger).toBeDefined();
+  });
 });

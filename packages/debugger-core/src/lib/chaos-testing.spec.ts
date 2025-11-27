@@ -83,9 +83,8 @@ setTimeout(() => {
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Session should detect the crash
-      expect(session.process.killed || session.process.exitCode !== null).toBe(
-        true,
-      );
+      const proc = session.getProcess();
+      expect(proc?.killed || proc?.exitCode !== null).toBe(true);
 
       // Cleanup should work even after crash
       await expect(
@@ -111,9 +110,10 @@ setTimeout(() => {
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // All should be detected as crashed
-      const crashedCount = sessions.filter(
-        (s) => s.process.killed || s.process.exitCode !== null,
-      ).length;
+      const crashedCount = sessions.filter((s) => {
+        const proc = s.getProcess();
+        return proc?.killed || proc?.exitCode !== null;
+      }).length;
 
       expect(crashedCount).toBe(sessionCount);
 
@@ -133,13 +133,14 @@ setTimeout(() => {
       });
 
       // Kill the process with SIGKILL
-      session.process.kill('SIGKILL');
+      const proc = session.getProcess();
+      proc?.kill('SIGKILL');
 
       // Wait for kill to take effect
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Session should detect the termination
-      expect(session.process.killed).toBe(true);
+      expect(proc?.killed).toBe(true);
 
       // Cleanup should handle killed process
       await expect(
@@ -268,7 +269,7 @@ setTimeout(() => {
       const breakpointCount = 100;
       const results = await Promise.allSettled(
         Array.from({ length: breakpointCount }, (_, i) =>
-          session.breakpointManager.setBreakpoint(testFixturePath, i + 1),
+          session.setBreakpoint(testFixturePath, i + 1),
         ),
       );
 
@@ -336,10 +337,7 @@ setTimeout(() => {
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Good session should still work
-      const breakpoint = await goodSession.breakpointManager.setBreakpoint(
-        testFixturePath,
-        1,
-      );
+      const breakpoint = await goodSession.setBreakpoint(testFixturePath, 1);
       expect(breakpoint).toBeDefined();
 
       // Cleanup both

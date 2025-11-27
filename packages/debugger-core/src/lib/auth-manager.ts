@@ -23,12 +23,21 @@ export interface ApiKey {
 }
 
 /**
+ * Authentication result
+ */
+export interface AuthResult {
+  authenticated: boolean;
+  error?: string;
+}
+
+/**
  * Authentication configuration
  */
 export interface AuthConfig {
   enabled: boolean;
   tokenExpirationMs?: number; // Default: 1 hour
   requireApiKey?: boolean;
+  tokens?: string[]; // Pre-configured valid tokens
 }
 
 /**
@@ -39,12 +48,18 @@ export class AuthManager {
   private tokens = new Map<string, AuthToken>();
   private apiKeys = new Map<string, ApiKey>();
   private config: AuthConfig;
+  private validTokens = new Set<string>(); // Pre-configured valid tokens
 
   constructor(config: AuthConfig = { enabled: false }) {
     this.config = {
       tokenExpirationMs: 60 * 60 * 1000, // 1 hour default
       ...config,
     };
+
+    // Add pre-configured tokens if provided
+    if (config.tokens) {
+      config.tokens.forEach((token) => this.validTokens.add(token));
+    }
   }
 
   /**
@@ -68,6 +83,73 @@ export class AuthManager {
 
     this.tokens.set(token, authToken);
     return authToken;
+  }
+
+  /**
+   * Authenticate a token and return detailed result
+   * @param token The token to authenticate
+   * @returns Authentication result with status and error message
+   */
+  authenticate(token: string | null | undefined): AuthResult {
+    if (!this.config.enabled) {
+      return { authenticated: true }; // Authentication disabled
+    }
+
+    // Check for null/undefined/empty tokens
+    if (!token || token.trim() === '') {
+      return {
+        authenticated: false,
+        error: 'Authentication token is required',
+      };
+    }
+
+    // Use constant-time comparison to prevent timing attacks
+    const isValid = this.constantTimeCompare(token);
+
+    if (!isValid) {
+      return {
+        authenticated: false,
+        error: 'Invalid authentication token',
+      };
+    }
+
+    return { authenticated: true };
+  }
+
+  /**
+   * Constant-time comparison to prevent timing attacks
+   * @param token The token to check
+   * @returns True if the token is valid
+   */
+  private constantTimeCompare(token: string): boolean {
+    // Check pre-configured tokens
+    if (this.validTokens.size > 0) {
+      let isValid = false;
+      for (const validToken of this.validTokens) {
+        // Use crypto.timingSafeEqual for constant-time comparison
+        const tokenBuffer = Buffer.from(token);
+        const validBuffer = Buffer.from(validToken);
+
+        // Pad buffers to same length to avoid timing leaks
+        const maxLen = Math.max(tokenBuffer.length, validBuffer.length);
+        const paddedToken = Buffer.alloc(maxLen);
+        const paddedValid = Buffer.alloc(maxLen);
+        tokenBuffer.copy(paddedToken);
+        validBuffer.copy(paddedValid);
+
+        try {
+          if (paddedToken.equals(paddedValid)) {
+            isValid = true;
+          }
+        } catch {
+          // Continue checking other tokens
+        }
+      }
+      return isValid;
+    }
+
+    // Check generated tokens
+    return this.validateToken(token);
   }
 
   /**

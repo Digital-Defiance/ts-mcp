@@ -202,4 +202,140 @@ describe('RetryHandler', () => {
       expect(instance.callCount).toBe(3);
     });
   });
+
+  describe('edge cases', () => {
+    it('should handle non-Error exceptions', async () => {
+      const operation = jest.fn().mockRejectedValue('string error');
+
+      await expect(
+        RetryHandler.execute(operation, {
+          maxAttempts: 2,
+          initialDelay: 10,
+        }),
+      ).rejects.toThrow('string error');
+
+      expect(operation).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle zero jitter', async () => {
+      jest.useFakeTimers();
+
+      const operation = jest
+        .fn()
+        .mockRejectedValueOnce(new Error('failure'))
+        .mockResolvedValueOnce('success');
+
+      const promise = RetryHandler.execute(operation, {
+        maxAttempts: 2,
+        initialDelay: 100,
+        jitter: 0,
+      });
+
+      await jest.advanceTimersByTimeAsync(0);
+      await jest.advanceTimersByTimeAsync(100);
+
+      const result = await promise;
+      expect(result).toBe('success');
+
+      jest.useRealTimers();
+    });
+
+    it('should handle negative jitter values', async () => {
+      jest.useFakeTimers();
+      jest.spyOn(Math, 'random').mockReturnValue(0); // Will produce negative jitter
+
+      const operation = jest
+        .fn()
+        .mockRejectedValueOnce(new Error('failure'))
+        .mockResolvedValueOnce('success');
+
+      const promise = RetryHandler.execute(operation, {
+        maxAttempts: 2,
+        initialDelay: 100,
+        jitter: 0.5,
+      });
+
+      await jest.advanceTimersByTimeAsync(0);
+      await jest.advanceTimersByTimeAsync(100);
+
+      const result = await promise;
+      expect(result).toBe('success');
+
+      jest.useRealTimers();
+      (Math.random as jest.Mock).mockRestore();
+    });
+
+    it('should handle executeWithStats with non-retryable error', async () => {
+      const operation = jest.fn().mockRejectedValue(new Error('non-retryable'));
+
+      await expect(
+        RetryHandler.executeWithStats(operation, {
+          maxAttempts: 3,
+          initialDelay: 10,
+          isRetryable: () => false,
+        }),
+      ).rejects.toThrow('non-retryable');
+
+      expect(operation).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle executeWithStats with all attempts failing', async () => {
+      const operation = jest
+        .fn()
+        .mockRejectedValue(new Error('persistent failure'));
+
+      await expect(
+        RetryHandler.executeWithStats(operation, {
+          maxAttempts: 2,
+          initialDelay: 10,
+        }),
+      ).rejects.toThrow('persistent failure');
+
+      expect(operation).toHaveBeenCalledTimes(2);
+    });
+
+    it('should log retry attempts', async () => {
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+
+      const operation = jest
+        .fn()
+        .mockRejectedValueOnce(new Error('failure'))
+        .mockResolvedValueOnce('success');
+
+      await RetryHandler.execute(operation, {
+        maxAttempts: 2,
+        initialDelay: 10,
+      });
+
+      expect(consoleSpy).toHaveBeenCalled();
+      expect(consoleSpy.mock.calls[0][0]).toContain('Retry attempt');
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should handle very large backoff multipliers', async () => {
+      jest.useFakeTimers();
+
+      const operation = jest
+        .fn()
+        .mockRejectedValueOnce(new Error('failure'))
+        .mockResolvedValueOnce('success');
+
+      const promise = RetryHandler.execute(operation, {
+        maxAttempts: 2,
+        initialDelay: 100,
+        maxDelay: 500,
+        backoffMultiplier: 100, // Very large multiplier
+        jitter: 0,
+      });
+
+      await jest.advanceTimersByTimeAsync(0);
+      await jest.advanceTimersByTimeAsync(500); // Should be capped at maxDelay
+
+      const result = await promise;
+      expect(result).toBe('success');
+
+      jest.useRealTimers();
+    });
+  });
 });

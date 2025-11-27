@@ -360,4 +360,141 @@ describe('DataMasker', () => {
       expect(output.payment.amount).toBe(100);
     });
   });
+
+  describe('edge cases', () => {
+    it('should handle disabled rules', () => {
+      const masker = new DataMasker({ enabled: true, maskEmails: true });
+      masker.disableRule('email');
+
+      const input = 'Email: test@example.com';
+      const output = masker.maskString(input);
+
+      expect(output).toBe(input);
+    });
+
+    it('should return false when removing non-existent rule', () => {
+      const masker = new DataMasker({ enabled: true });
+
+      expect(masker.removeRule('non-existent')).toBe(false);
+    });
+
+    it('should return false when enabling non-existent rule', () => {
+      const masker = new DataMasker({ enabled: true });
+
+      expect(masker.enableRule('non-existent')).toBe(false);
+    });
+
+    it('should return false when disabling non-existent rule', () => {
+      const masker = new DataMasker({ enabled: true });
+
+      expect(masker.disableRule('non-existent')).toBe(false);
+    });
+
+    it('should handle numbers in objects', () => {
+      const masker = new DataMasker({ enabled: true });
+
+      const input = { value: 42 };
+      const output = masker.maskObject(input);
+
+      expect(output.value).toBe(42);
+    });
+
+    it('should handle boolean values in objects', () => {
+      const masker = new DataMasker({ enabled: true });
+
+      const input = { flag: true };
+      const output = masker.maskObject(input);
+
+      expect(output.flag).toBe(true);
+    });
+
+    it('should mask object keys containing sensitive data', () => {
+      const masker = new DataMasker({ enabled: true, maskEmails: true });
+
+      const input = {
+        'user@example.com': 'value',
+      };
+      const output = masker.maskObject(input);
+
+      expect(output['[EMAIL]']).toBe('value');
+      expect(output['user@example.com']).toBeUndefined();
+    });
+
+    it('should handle custom rules with enabled flag', () => {
+      const masker = new DataMasker({ enabled: true });
+      masker.addRule({
+        name: 'custom',
+        pattern: /SECRET/g,
+        replacement: '[SECRET]',
+        enabled: false,
+      });
+
+      const input = 'This is SECRET';
+      const output = masker.maskString(input);
+
+      expect(output).toBe(input); // Rule is disabled
+    });
+
+    it('should handle API keys masking', () => {
+      const masker = new DataMasker({ enabled: true, maskApiKeys: true });
+
+      const input = 'Key: abcdefghijklmnopqrstuvwxyz123456';
+      const output = masker.maskString(input);
+
+      expect(output).toBe('Key: [API_KEY]');
+    });
+
+    it('should handle all masking options disabled', () => {
+      const masker = new DataMasker({
+        enabled: true,
+        maskEmails: false,
+        maskPhones: false,
+        maskCreditCards: false,
+        maskSSNs: false,
+        maskApiKeys: false,
+        maskPasswords: false,
+      });
+
+      const input = 'Email: test@example.com, Phone: 555-123-4567';
+      const output = masker.maskString(input);
+
+      expect(output).toBe(input);
+    });
+
+    it('should handle custom rules in configuration', () => {
+      const masker = new DataMasker({
+        enabled: true,
+        customRules: [
+          {
+            name: 'custom1',
+            pattern: /CUSTOM1/g,
+            replacement: '[CUSTOM1]',
+            enabled: true,
+          },
+        ],
+      });
+
+      const input = 'This is CUSTOM1';
+      const output = masker.maskString(input);
+
+      expect(output).toBe('This is [CUSTOM1]');
+    });
+
+    it('should handle maskObject with max depth reached', () => {
+      const masker = new DataMasker({ enabled: true, maskEmails: true });
+
+      const input = {
+        level1: {
+          level2: {
+            level3: 'test@example.com',
+          },
+        },
+      };
+
+      const output = masker.maskObject(input, 1);
+
+      // At depth 1, level2 is not recursed into
+      expect(output.level1.level2.level3).toBe('test@example.com');
+    });
+  });
 });

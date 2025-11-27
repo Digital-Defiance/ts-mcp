@@ -98,19 +98,26 @@ export class HealthChecker {
     checker: DependencyChecker,
   ): Promise<DependencyHealth> {
     const startTime = Date.now();
+    let timeoutId: NodeJS.Timeout | null = null;
     try {
       const result = await Promise.race([
         checker(),
-        new Promise<DependencyHealth>((_, reject) =>
-          setTimeout(() => reject(new Error('Health check timeout')), 5000),
-        ),
+        new Promise<DependencyHealth>((_, reject) => {
+          timeoutId = setTimeout(
+            () => reject(new Error('Health check timeout')),
+            5000,
+          );
+        }),
       ]);
+
+      if (timeoutId) clearTimeout(timeoutId);
 
       return {
         ...result,
         latency: Date.now() - startTime,
       };
     } catch (error) {
+      if (timeoutId) clearTimeout(timeoutId);
       return {
         name,
         status: HealthStatus.UNHEALTHY,
