@@ -1,0 +1,20 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY packages/mcp-server/package.json ./
+COPY packages/debugger-core/package.json ./core/
+
+# Install dependencies
+RUN npm install --production
+
+# Copy built code
+COPY packages/mcp-server/dist ./dist/
+COPY packages/debugger-core/dist ./core/dist/
+
+# Expose MCP server
+EXPOSE 3000
+
+# Run MCP server
+CMD ["node", "./dist/src/index.js"]

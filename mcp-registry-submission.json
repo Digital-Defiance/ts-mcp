@@ -1,0 +1,61 @@
+{
+  "name": "ts-mcp",
+  "displayName": "TypeScript MCP Debugger",
+  "description": "Advanced debugging capabilities for Node.js and TypeScript applications with 25+ debugging tools including breakpoints, variable inspection, execution control, performance profiling, and hang detection",
+  "version": "1.0.0",
+  "author": "Digital Defiance, Jessica Mulein",
+  "license": "MIT",
+  "homepage": "https://github.com/digitaldefiance/ts-mcp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/digitaldefiance/ts-mcp.git"
+  },
+  "keywords": [
+    "debugging",
+    "typescript",
+    "nodejs",
+    "breakpoints",
+    "profiling",
+    "inspector-protocol",
+    "development-tools"
+  ],
+  "installation": {
+    "npm": "@digitaldefiance/ts-mcp-server"
+  },
+  "server": {
+    "command": "ts-mcp-server",
+    "args": []
+  },
+  "tools": [
+    {
+      "name": "debugger_start",
+      "description": "Start debugging a Node.js/TypeScript process"
+    },
+    {
+      "name": "debugger_set_breakpoint",
+      "description": "Set breakpoints with conditional logic"
+    },
+    {
+      "name": "debugger_inspect",
+      "description": "Evaluate expressions and inspect variables"
+    },
+    {
+      "name": "debugger_start_cpu_profile",
+      "description": "Profile CPU performance and detect bottlenecks"
+    },
+    {
+      "name": "debugger_detect_hang",
+      "description": "Detect infinite loops and hanging processes"
+    }
+  ],
+  "capabilities": [
+    "Interactive debugging with breakpoints",
+    "Variable inspection and expression evaluation",
+    "Step-through execution control",
+    "Performance profiling (CPU, memory, timeline)",
+    "Hang detection and infinite loop detection",
+    "TypeScript source map support",
+    "Test framework integration (Jest, Mocha, Vitest)",
+    "Advanced breakpoint types (logpoints, exception breakpoints)"
+  ]
+}

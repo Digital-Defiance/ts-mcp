@@ -1,0 +1,54 @@
+{
+  "name": "ts-mcp",
+  "displayName": "TypeScript Debugger",
+  "description": "Advanced debugging capabilities for Node.js and TypeScript applications with 25+ debugging tools",
+  "version": "1.0.0",
+  "author": "Digital Defiance",
+  "license": "MIT",
+  "homepage": "https://github.com/digitaldefiance/ts-mcp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/digitaldefiance/ts-mcp.git"
+  },
+  "keywords": [
+    "debugging",
+    "typescript",
+    "nodejs",
+    "mcp",
+    "breakpoints",
+    "profiling",
+    "inspector-protocol"
+  ],
+  "server": {
+    "command": "node",
+    "args": ["./packages/mcp-server/dist/src/index.js"],
+    "env": {
+      "NODE_ENV": "production"
+    }
+  },
+  "capabilities": [
+    "debugging",
+    "breakpoints",
+    "variable-inspection",
+    "execution-control",
+    "performance-profiling",
+    "hang-detection",
+    "source-maps",
+    "test-framework-integration"
+  ],
+  "tools": [
+    "debugger_start",
+    "debugger_set_breakpoint",
+    "debugger_continue",
+    "debugger_step_over",
+    "debugger_step_into",
+    "debugger_step_out",
+    "debugger_pause",
+    "debugger_inspect",
+    "debugger_get_local_variables",
+    "debugger_get_stack",
+    "debugger_detect_hang",
+    "debugger_start_cpu_profile",
+    "debugger_take_heap_snapshot"
+  ]
+}
