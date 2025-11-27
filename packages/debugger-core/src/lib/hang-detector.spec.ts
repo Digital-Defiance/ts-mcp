@@ -115,6 +115,50 @@ describe('HangDetector', () => {
     expect(topFrame.line).toBeGreaterThan(0);
   }, 10000);
 
+  it('should detect async hang', async () => {
+    const asyncHangScript = path.join(
+      __dirname,
+      '../../test-fixtures/async-hang.js',
+    );
+
+    const timeout = 2000; // 2 second timeout
+    const result = await hangDetector.detectHang({
+      command: 'node',
+      args: [asyncHangScript],
+      timeout,
+    });
+
+    // Should detect hang
+    expect(result.hung).toBe(true);
+    expect(result.completed).toBeUndefined();
+
+    // Should have a message
+    expect(result.message).toBeDefined();
+    expect(result.message).toContain('timeout');
+
+    // Duration should be at least the timeout
+    expect(result.duration).toBeDefined();
+    expect(result.duration!).toBeGreaterThanOrEqual(timeout * 0.9); // Allow 10% margin
+
+    // Location and stack may or may not be present depending on when the process is paused
+    // For async hangs, the process might be in event loop waiting, so location might not be captured
+    // We just verify that if they are present, they have the correct structure
+    if (result.location) {
+      expect(typeof result.location).toBe('string');
+    }
+
+    if (result.stack) {
+      expect(Array.isArray(result.stack)).toBe(true);
+      if (result.stack.length > 0) {
+        const topFrame = result.stack[0];
+        expect(topFrame.functionName).toBeDefined();
+        expect(topFrame.file).toBeDefined();
+        expect(topFrame.line).toBeDefined();
+        expect(path.isAbsolute(topFrame.file)).toBe(true);
+      }
+    }
+  }, 10000);
+
   // Feature: mcp-debugger-tool, Property 12: Infinite loop detection via sampling
   // For any Target Process being monitored with a sample interval, if the execution
   // location remains unchanged across consecutive samples for the specified duration,

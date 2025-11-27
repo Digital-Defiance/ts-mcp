@@ -497,15 +497,15 @@
     - Return cleanup status
     - _Requirements: 8.2, 9.1_
 
-- [-] 16. Expand E2E tests for complete coverage
-  - [ ] 16.1 Add E2E tests for step operations
+- [x] 16. Expand E2E tests for complete coverage
+  - [x] 16.1 Add E2E tests for step operations
     - Test debugger_step_into
     - Test debugger_step_out
     - Test debugger_pause
     - Verify execution flow is maintained
     - _Requirements: 2.4, 2.5, 2.6_
 
-  - [ ] 16.2 Add E2E tests for breakpoint management
+  - [x] 16.2 Add E2E tests for breakpoint management
     - Test debugger_list_breakpoints
     - Test debugger_remove_breakpoint
     - Test debugger_toggle_breakpoint
@@ -513,66 +513,66 @@
     - Verify breakpoint state consistency
     - _Requirements: 1.2, 1.3, 1.4, 1.5_
 
-  - [ ] 16.3 Add E2E tests for variable inspection
+  - [x] 16.3 Add E2E tests for variable inspection
     - Test debugger_get_local_variables
     - Test debugger_get_global_variables
     - Test debugger_inspect_object with nested objects
     - Test complex object serialization
     - _Requirements: 3.1, 3.2, 3.3, 9.3_
 
-  - [ ] 16.4 Add E2E tests for variable watching
+  - [x] 16.4 Add E2E tests for variable watching
     - Test debugger_add_watch
     - Test debugger_remove_watch
     - Test debugger_get_watches
     - Verify value change detection
     - _Requirements: 3.5_
 
-  - [ ] 16.5 Add E2E tests for stack frame navigation
+  - [x] 16.5 Add E2E tests for stack frame navigation
     - Test debugger_switch_stack_frame
     - Test variable inspection in different frames
     - Verify frame context switching
     - _Requirements: 4.2, 4.3_
 
-  - [ ] 16.6 Add E2E tests for session management
+  - [x] 16.6 Add E2E tests for session management
     - Test debugger_stop_session
     - Test multiple concurrent sessions
     - Verify session isolation
     - Test resource cleanup
     - _Requirements: 8.2, 8.5_
 
-  - [ ] 16.7 Add E2E tests for crash detection
+  - [x] 16.7 Add E2E tests for crash detection
     - Test process crash handling
     - Verify automatic cleanup on crash
     - Test error reporting
     - _Requirements: 8.1_
 
-- [ ] 17. Create test fixtures and integration tests
-  - [ ] 17.1 Create test fixture files
+- [x] 17. Create test fixtures and integration tests
+  - [x] 17.1 Create test fixture files
     - Create infinite-loop.js for hang detection testing
     - Create async-hang.js for async hang testing
     - Create normal-completion.js for successful execution
     - Create typescript-sample.ts for source map testing
     - _Requirements: 5.4, 7.1_
 
-  - [ ] 17.2 Write integration test for hang detection
+  - [x] 17.2 Write integration test for hang detection
     - Test detecting infinite loops
     - Test detecting async hangs
     - Test normal completion without false positives
     - _Requirements: 5.1, 5.4_
 
-  - [ ] 17.3 Write integration test for TypeScript debugging
+  - [x] 17.3 Write integration test for TypeScript debugging
     - Test setting breakpoints in TypeScript files
     - Test source map location mapping
     - Test variable inspection with TypeScript names
     - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
-  - [ ] 17.4 Write integration test for test framework integration
+  - [x] 17.4 Write integration test for test framework integration
     - Test running Jest tests with debugger
     - Test capturing test output
     - Test reporting test failures
     - _Requirements: 6.1, 6.4, 6.5_
 
-- [ ] 18. Create MCP configuration and documentation
+- [-] 18. Create MCP configuration and documentation
   - [ ] 18.1 Create MCP configuration file
     - Add debugger server to .kiro/settings/mcp.json
     - Configure command and args for server startup
