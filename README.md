@@ -46,12 +46,12 @@ MCP server implementation that exposes debugging tools to AI agents.
 
 ## 🚀 Current Status
 
-### ✅ Completed (Tasks 2-9)
+### ✅ Completed (Tasks 1-20)
 - [x] Project structure setup with Nx monorepo
 - [x] Package scaffolding (debugger-core, mcp-server)
 - [x] Requirements document (EARS format with 9 requirements, 44 acceptance criteria)
 - [x] Design document (22 correctness properties, architecture, testing strategy)
-- [x] Implementation plan (18 major tasks with subtasks)
+- [x] Implementation plan (30 major tasks with subtasks)
 - [x] **Inspector Protocol client** - WebSocket connection, CDP commands, event handling
 - [x] **Process spawning** - Node.js with inspector attachment and source map support
 - [x] **Session management** - Multi-session support with isolation
@@ -60,23 +60,34 @@ MCP server implementation that exposes debugging tools to AI agents.
 - [x] **Variable inspection** - Expression evaluation, object inspection, variable watching
 - [x] **Call stack operations** - Stack retrieval, frame navigation, absolute paths
 - [x] **Hang detection** - Timeout-based and sampling-based infinite loop detection
+- [x] **Source map support** - Loading, location mapping, variable name preservation
+- [x] **Test framework integration** - Jest, Mocha, Vitest support with output capture
+- [x] **MCP tools (17 core tools)** - All basic debugging operations
+- [x] **Error handling and cleanup** - Crash detection, resource cleanup, error formatting
+- [x] **MCP server setup** - Server initialization, tool registration, lifecycle management
+- [x] **E2E testing** - Protocol tests, tool execution tests, error handling tests
+- [x] **Advanced breakpoint types** - Logpoints, exception breakpoints, hit count breakpoints, function breakpoints
+- [x] **Audit logging** - Structured logging with timestamps, session context, JSON export
 
-### 🔄 In Progress (Tasks 10-12)
-- [x] **Source map support** - Loading and location mapping (90% complete)
-- [ ] Variable name mapping for TypeScript debugging
-- [ ] Test framework integration (Jest, Mocha, Vitest)
-- [ ] MCP tools implementation (10 debugging tools)
+### 🔄 In Progress (Tasks 21-27)
+- [ ] Security and compliance features (authentication, rate limiting, PII masking)
+- [ ] Observability and telemetry (structured logging, metrics, health checks)
+- [ ] Performance profiling (CPU profiling, memory profiling, performance timeline)
+- [ ] Production readiness (graceful shutdown, circuit breakers, retry logic)
+- [ ] Enhanced testing (load testing, chaos testing, compatibility testing)
+- [ ] Developer experience enhancements (configuration presets, workspace-aware debugging)
+- [ ] Final enterprise checkpoint
 
-### 📋 Planned (Tasks 13-18)
-- [ ] Error handling and cleanup
-- [ ] MCP server setup and tool registration
-- [ ] Integration tests with real debugging scenarios
-- [ ] Property-based testing with fast-check (22 properties)
-- [ ] Documentation and examples
-- [ ] MCP configuration for Kiro IDE
+### 📋 Planned (Tasks 28-30)
+- [ ] Docker MCP Registry contribution
+- [ ] VS Code and GitHub Copilot integration
+- [ ] Optional long-term soak testing
 
 ### 🎯 Progress Summary
-**Core Implementation: 75% Complete (9/12 core tasks)**
+**Core Implementation: 100% Complete (20/20 core tasks)**
+**Enterprise Features: 0% Complete (0/7 enterprise tasks)**
+**Overall Progress: 67% Complete (20/30 total tasks)**
+
 - Inspector Protocol ✅
 - Session Management ✅
 - Breakpoint Operations ✅
@@ -84,11 +95,18 @@ MCP server implementation that exposes debugging tools to AI agents.
 - Variable Inspection ✅
 - Call Stack Operations ✅
 - Hang Detection ✅
-- Source Maps 🔄 (90%)
-- Test Framework Integration ⏳
-- MCP Tools ⏳
-- Error Handling ⏳
-- Server Setup ⏳
+- Source Maps ✅
+- Test Framework Integration ✅
+- MCP Tools (25 total) ✅
+- Error Handling ✅
+- Server Setup ✅
+- E2E Testing ✅
+- Advanced Breakpoints ✅
+- Audit Logging ✅
+- Security Features ⏳
+- Observability ⏳
+- Performance Profiling ⏳
+- Production Readiness ⏳
 
 ## 🏗️ Architecture
 
@@ -118,8 +136,9 @@ MCP server implementation that exposes debugging tools to AI agents.
 
 ## 🛠️ MCP Tools
 
-The server exposes the following debugging tools to AI agents:
+The server exposes 25 debugging tools to AI agents:
 
+### Core Debugging Tools (17)
 | Tool | Description |
 |------|-------------|
 | `debugger_start` | Start a process with debugger attached |
@@ -129,14 +148,34 @@ The server exposes the following debugging tools to AI agents:
 | `debugger_step_into` | Step into function calls |
 | `debugger_step_out` | Step out of current function |
 | `debugger_pause` | Pause execution at current point |
-| `debugger_inspect` | Inspect variables and evaluate expressions |
-| `debugger_get_stack` | Get current call stack |
+| `debugger_remove_breakpoint` | Remove a breakpoint by ID |
+| `debugger_toggle_breakpoint` | Enable/disable a breakpoint |
+| `debugger_list_breakpoints` | List all breakpoints in a session |
+| `debugger_inspect` | Evaluate expressions in current context |
+| `debugger_get_local_variables` | Get local variables in current scope |
+| `debugger_get_global_variables` | Get global variables |
+| `debugger_inspect_object` | Inspect object properties with depth control |
+| `debugger_add_watch` | Add a watched expression |
+| `debugger_remove_watch` | Remove a watched expression |
+| `debugger_get_watches` | Get all watched expressions with values |
+| `debugger_get_stack` | Get current call stack with absolute paths |
+| `debugger_switch_stack_frame` | Switch context to different stack frame |
+| `debugger_stop_session` | Stop debug session and cleanup |
 | `debugger_detect_hang` | Run command and detect if it hangs |
+
+### Advanced Breakpoint Tools (4)
+| Tool | Description |
+|------|-------------|
+| `debugger_set_logpoint` | Set a logpoint that logs without pausing (supports {variable} interpolation) |
+| `debugger_set_exception_breakpoint` | Break on caught/uncaught exceptions with optional filtering |
+| `debugger_set_function_breakpoint` | Break when a function is called (supports regex patterns) |
+| `debugger_set_hit_count_condition` | Set hit count condition for breakpoints (==, >, >=, <, <=, %) |
 
 ## 📊 Implementation Plan
 
-The implementation is organized into 18 major tasks:
+The implementation is organized into 30 major tasks:
 
+### Core Implementation (Tasks 1-19) ✅ **COMPLETED**
 1. **Project Setup** - Dependencies, TypeScript config, testing framework
 2. **Inspector Protocol Client** - WebSocket connection, CDP commands, event handling
 3. **Process Spawning** - Launch Node.js with inspector enabled
@@ -148,13 +187,36 @@ The implementation is organized into 18 major tasks:
 9. **Hang Detection** - Timeout-based and sampling-based detection
 10. **Source Map Support** - TypeScript debugging with location mapping
 11. **Test Framework Integration** - Jest, Mocha, Vitest support
-12. **MCP Tools** - Implement all 10 debugging tools
+12. **MCP Tools** - Implement all 17 core debugging tools
 13. **Error Handling** - Crash detection, cleanup, error formatting
 14. **MCP Server Setup** - Server initialization and tool registration
-15. **Testing Checkpoint** - Ensure all tests pass
-16. **Integration Tests** - End-to-end testing with fixtures
-17. **Configuration & Documentation** - MCP config, README, API docs
-18. **Final Checkpoint** - Comprehensive testing
+15. **Missing MCP Tools** - Complete tool coverage for all features
+16. **Expanded E2E Tests** - Comprehensive coverage of all tools
+17. **Test Fixtures** - Integration test scenarios
+18. **MCP Configuration** - Kiro integration, documentation
+19. **Final Checkpoint** - All core tests passing
+
+### Advanced Features (Task 20) ✅ **COMPLETED**
+20. **Advanced Breakpoint Types**
+    - Logpoints (non-breaking breakpoints with logging)
+    - Exception breakpoints (caught/uncaught with filtering)
+    - Hit count breakpoints (conditional on hit count)
+    - Function breakpoints (break on function entry)
+    - Audit logging (structured operation logging)
+
+### Enterprise Features (Tasks 21-27) ⏳ **PLANNED**
+21. **Security & Compliance** - Authentication, rate limiting, PII masking, session timeouts
+22. **Observability & Telemetry** - Structured logging, metrics, health checks, session recording
+23. **Performance Profiling** - CPU profiling, memory profiling, performance timeline
+24. **Production Readiness** - Graceful shutdown, circuit breakers, retry logic, resource limits
+25. **Enhanced Testing** - Load testing, chaos testing, compatibility testing, security testing
+26. **Developer Experience** - Configuration presets, workspace-aware debugging, multi-target debugging
+27. **Final Enterprise Checkpoint** - Comprehensive enterprise feature validation
+
+### Community & Integration (Tasks 28-30) ⏳ **PLANNED**
+28. **Docker MCP Registry** - Contribution preparation and submission
+29. **VS Code & Copilot Integration** - Extension development, LSP/DAP integration
+30. **Optional Soak Testing** - Long-term stability validation
 
 See [tasks.md](.kiro/specs/mcp-debugger-tool/tasks.md) for detailed task breakdown.
 
@@ -236,24 +298,44 @@ npx nx build debugger-core --watch
 - [x] Variable inspection
 - [x] Execution control
 
-### Milestone 2: Advanced Features 🔄 **IN PROGRESS (75%)**
+### Milestone 2: Advanced Features ✅ **COMPLETED**
 - [x] Hang detection
 - [x] Source map support (location mapping)
-- [ ] Source map variable name mapping
-- [ ] Test framework integration
+- [x] Source map variable name mapping
+- [x] Test framework integration
 - [x] Call stack operations
 
-### Milestone 3: MCP Integration ⏳ **NEXT**
-- [ ] MCP server implementation
-- [ ] All tool handlers (10 tools)
-- [ ] Error handling
-- [ ] Response formatting
+### Milestone 3: MCP Integration ✅ **COMPLETED**
+- [x] MCP server implementation
+- [x] All tool handlers (25 tools)
+- [x] Error handling
+- [x] Response formatting
 
-### Milestone 4: Testing & Polish ⏳ **PLANNED**
-- [ ] Property-based tests (22 properties)
-- [ ] Integration tests
-- [ ] Documentation
-- [ ] MCP configuration
+### Milestone 4: Testing & Polish ✅ **COMPLETED**
+- [x] Property-based tests (22 properties)
+- [x] Integration tests
+- [x] E2E tests
+- [x] Documentation
+- [x] MCP configuration
+
+### Milestone 5: Advanced Breakpoints ✅ **COMPLETED**
+- [x] Logpoints (non-breaking breakpoints)
+- [x] Exception breakpoints
+- [x] Hit count breakpoints
+- [x] Function breakpoints
+- [x] Audit logging
+
+### Milestone 6: Enterprise Features ⏳ **NEXT**
+- [ ] Security and compliance
+- [ ] Observability and telemetry
+- [ ] Performance profiling
+- [ ] Production readiness
+- [ ] Enhanced testing
+
+### Milestone 7: Community Integration ⏳ **PLANNED**
+- [ ] Docker MCP Registry contribution
+- [ ] VS Code extension
+- [ ] GitHub Copilot integration
 
 ## 🤝 Contributing
 

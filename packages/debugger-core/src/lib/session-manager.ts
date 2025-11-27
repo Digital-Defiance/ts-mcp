@@ -1,5 +1,6 @@
 import { randomBytes } from 'crypto';
 import { DebugSession, DebugSessionConfig } from './debug-session';
+import { AuditLogger } from './audit-logger';
 
 /**
  * Manages multiple concurrent debug sessions
@@ -7,6 +8,11 @@ import { DebugSession, DebugSessionConfig } from './debug-session';
  */
 export class SessionManager {
   private sessions = new Map<string, DebugSession>();
+  private auditLogger: AuditLogger;
+
+  constructor(auditLogger?: AuditLogger) {
+    this.auditLogger = auditLogger || new AuditLogger();
+  }
 
   /**
    * Generate a unique session ID
@@ -29,16 +35,37 @@ export class SessionManager {
 
     // Register crash handler to automatically clean up crashed sessions
     session.onCrash((error: Error) => {
+      // Log crash
+      this.auditLogger.log(
+        sessionId,
+        'session_crash',
+        { error: error.message },
+        false,
+        error.message,
+      );
       // Session will clean itself up, we just need to remove it from tracking
       this.sessions.delete(sessionId);
     });
 
     try {
       await session.start();
+      this.auditLogger.log(
+        sessionId,
+        'session_create',
+        { command: config.command, args: config.args },
+        true,
+      );
       return session;
     } catch (error) {
       // Remove session if start fails
       this.sessions.delete(sessionId);
+      this.auditLogger.log(
+        sessionId,
+        'session_create',
+        { command: config.command, args: config.args },
+        false,
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -77,12 +104,31 @@ export class SessionManager {
   async removeSession(sessionId: string): Promise<boolean> {
     const session = this.sessions.get(sessionId);
     if (!session) {
+      this.auditLogger.log(
+        sessionId,
+        'session_remove',
+        {},
+        false,
+        'Session not found',
+      );
       return false;
     }
 
-    await session.cleanup();
-    this.sessions.delete(sessionId);
-    return true;
+    try {
+      await session.cleanup();
+      this.sessions.delete(sessionId);
+      this.auditLogger.log(sessionId, 'session_remove', {}, true);
+      return true;
+    } catch (error) {
+      this.auditLogger.log(
+        sessionId,
+        'session_remove',
+        {},
+        false,
+        error instanceof Error ? error.message : String(error),
+      );
+      throw error;
+    }
   }
 
   /**
@@ -102,6 +148,14 @@ export class SessionManager {
    */
   getSessionCount(): number {
     return this.sessions.size;
+  }
+
+  /**
+   * Get the audit logger
+   * @returns The audit logger instance
+   */
+  getAuditLogger(): AuditLogger {
+    return this.auditLogger;
   }
 
   /**

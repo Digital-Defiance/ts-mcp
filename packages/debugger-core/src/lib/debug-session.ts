@@ -12,6 +12,36 @@ import {
 import { SourceMapManager } from './source-map-manager';
 
 /**
+ * Breakpoint type enumeration
+ */
+export enum BreakpointType {
+  STANDARD = 'standard',
+  LOGPOINT = 'logpoint',
+  EXCEPTION = 'exception',
+  FUNCTION = 'function',
+}
+
+/**
+ * Hit count operator for hit count breakpoints
+ */
+export enum HitCountOperator {
+  EQUAL = '==',
+  GREATER = '>',
+  GREATER_EQUAL = '>=',
+  LESS = '<',
+  LESS_EQUAL = '<=',
+  MODULO = '%',
+}
+
+/**
+ * Hit count condition for breakpoints
+ */
+export interface HitCountCondition {
+  operator: HitCountOperator;
+  value: number;
+}
+
+/**
  * Breakpoint definition stored in a debug session
  */
 export interface Breakpoint {
@@ -21,6 +51,14 @@ export interface Breakpoint {
   condition?: string;
   enabled: boolean;
   cdpBreakpointId?: string;
+  type?: BreakpointType;
+  // Logpoint-specific fields
+  logMessage?: string;
+  // Hit count-specific fields
+  hitCount?: number;
+  hitCountCondition?: HitCountCondition;
+  // Function breakpoint-specific fields
+  functionName?: string;
 }
 
 /**
@@ -30,6 +68,17 @@ export interface WatchedVariable {
   name: string;
   expression: string;
   lastValue?: any;
+}
+
+/**
+ * Exception breakpoint configuration
+ */
+export interface ExceptionBreakpoint {
+  id: string;
+  breakOnCaught: boolean;
+  breakOnUncaught: boolean;
+  exceptionFilter?: string; // Optional regex pattern to filter exceptions
+  enabled: boolean;
 }
 
 /**
@@ -81,6 +130,7 @@ export class DebugSession {
     string,
     { oldValue: any; newValue: any }
   >();
+  private exceptionBreakpoints = new Map<string, ExceptionBreakpoint>();
   private config: DebugSessionConfig;
   private currentCallFrames: any[] = [];
   private currentFrameIndex: number = 0;
@@ -326,6 +376,7 @@ export class DebugSession {
     this.breakpointManager.clearAll();
     this.watchedVariables.clear();
     this.watchedVariableChanges.clear();
+    this.exceptionBreakpoints.clear();
 
     // Clear source map cache
     this.sourceMapManager.clearCache();
@@ -412,6 +463,200 @@ export class DebugSession {
     }
 
     return breakpoint;
+  }
+
+  /**
+   * Set a logpoint in the session
+   * Creates a logpoint that logs a message without pausing execution
+   * @param file File path where the logpoint should be set
+   * @param line Line number (1-indexed)
+   * @param logMessage Log message template with {variable} interpolation
+   * @returns The created logpoint
+   */
+  async setLogpoint(
+    file: string,
+    line: number,
+    logMessage: string,
+  ): Promise<Breakpoint> {
+    if (!this.cdpBreakpointOps) {
+      throw new Error('Session not started');
+    }
+
+    // Try to map TypeScript location to JavaScript if it's a TypeScript file
+    let targetFile = file;
+    let targetLine = line;
+
+    if (file.endsWith('.ts') || file.endsWith('.tsx')) {
+      const compiledLocation = await this.sourceMapManager.mapSourceToCompiled({
+        file,
+        line,
+        column: 0,
+      });
+
+      if (compiledLocation) {
+        targetFile = compiledLocation.file;
+        targetLine = compiledLocation.line;
+      }
+    }
+
+    // Create logpoint in manager with the original file/line
+    const logpoint = this.breakpointManager.createLogpoint(
+      file,
+      line,
+      logMessage,
+    );
+
+    // Set logpoint via CDP using the compiled location if enabled
+    if (logpoint.enabled) {
+      const cdpLogpoint = {
+        ...logpoint,
+        file: targetFile,
+        line: targetLine,
+      };
+
+      const cdpBreakpointId =
+        await this.cdpBreakpointOps.setBreakpoint(cdpLogpoint);
+      if (cdpBreakpointId) {
+        this.breakpointManager.updateCdpBreakpointId(
+          logpoint.id,
+          cdpBreakpointId,
+        );
+      }
+    }
+
+    return logpoint;
+  }
+
+  /**
+   * Set a function breakpoint in the session
+   * Creates a breakpoint that pauses when a function with the given name is called
+   * @param functionName Function name or regex pattern
+   * @returns The created function breakpoint
+   */
+  async setFunctionBreakpoint(functionName: string): Promise<Breakpoint> {
+    if (!this.cdpBreakpointOps) {
+      throw new Error('Session not started');
+    }
+
+    // Create function breakpoint in manager
+    const breakpoint =
+      this.breakpointManager.createFunctionBreakpoint(functionName);
+
+    // Set function breakpoint via CDP if enabled
+    if (breakpoint.enabled) {
+      const cdpBreakpointId =
+        await this.cdpBreakpointOps.setBreakpoint(breakpoint);
+      if (cdpBreakpointId) {
+        this.breakpointManager.updateCdpBreakpointId(
+          breakpoint.id,
+          cdpBreakpointId,
+        );
+      }
+    }
+
+    return breakpoint;
+  }
+
+  /**
+   * Set hit count condition for a breakpoint
+   * @param id Breakpoint identifier
+   * @param condition Hit count condition
+   * @returns The updated breakpoint or undefined if not found
+   */
+  setBreakpointHitCountCondition(
+    id: string,
+    condition: HitCountCondition,
+  ): Breakpoint | undefined {
+    return this.breakpointManager.setHitCountCondition(id, condition);
+  }
+
+  /**
+   * Get the breakpoint manager for this session
+   */
+  getBreakpointManager(): BreakpointManager {
+    return this.breakpointManager;
+  }
+
+  /**
+   * Set an exception breakpoint
+   * Configures the debugger to pause on caught and/or uncaught exceptions
+   * @param breakOnCaught Whether to break on caught exceptions
+   * @param breakOnUncaught Whether to break on uncaught exceptions
+   * @param exceptionFilter Optional regex pattern to filter exceptions by type/message
+   * @returns The created exception breakpoint
+   */
+  async setExceptionBreakpoint(
+    breakOnCaught: boolean,
+    breakOnUncaught: boolean,
+    exceptionFilter?: string,
+  ): Promise<ExceptionBreakpoint> {
+    if (!this.inspector) {
+      throw new Error('Session not started');
+    }
+
+    const id = `exception_${Date.now()}`;
+    const exceptionBreakpoint: ExceptionBreakpoint = {
+      id,
+      breakOnCaught,
+      breakOnUncaught,
+      exceptionFilter,
+      enabled: true,
+    };
+
+    this.exceptionBreakpoints.set(id, exceptionBreakpoint);
+
+    // Configure CDP to pause on exceptions
+    await this.inspector.send('Debugger.setPauseOnExceptions', {
+      state: breakOnUncaught
+        ? breakOnCaught
+          ? 'all'
+          : 'uncaught'
+        : breakOnCaught
+          ? 'all'
+          : 'none',
+    });
+
+    return exceptionBreakpoint;
+  }
+
+  /**
+   * Remove an exception breakpoint
+   * @param id Exception breakpoint identifier
+   * @returns True if the exception breakpoint was found and removed
+   */
+  async removeExceptionBreakpoint(id: string): Promise<boolean> {
+    const exceptionBreakpoint = this.exceptionBreakpoints.get(id);
+    if (!exceptionBreakpoint) {
+      return false;
+    }
+
+    this.exceptionBreakpoints.delete(id);
+
+    // If no more exception breakpoints, disable exception pausing
+    if (this.exceptionBreakpoints.size === 0 && this.inspector) {
+      await this.inspector.send('Debugger.setPauseOnExceptions', {
+        state: 'none',
+      });
+    }
+
+    return true;
+  }
+
+  /**
+   * Get all exception breakpoints
+   * @returns Array of all exception breakpoints
+   */
+  getAllExceptionBreakpoints(): ExceptionBreakpoint[] {
+    return Array.from(this.exceptionBreakpoints.values());
+  }
+
+  /**
+   * Get an exception breakpoint by ID
+   * @param id Exception breakpoint identifier
+   * @returns The exception breakpoint or undefined if not found
+   */
+  getExceptionBreakpoint(id: string): ExceptionBreakpoint | undefined {
+    return this.exceptionBreakpoints.get(id);
   }
 
   /**

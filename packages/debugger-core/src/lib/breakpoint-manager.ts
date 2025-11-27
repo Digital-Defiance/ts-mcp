@@ -1,5 +1,5 @@
 import { randomBytes } from 'crypto';
-import { Breakpoint } from './debug-session';
+import { Breakpoint, BreakpointType, HitCountCondition } from './debug-session';
 
 /**
  * Manages breakpoints for a debug session
@@ -30,6 +30,52 @@ export class BreakpointManager {
       line,
       condition,
       enabled: true,
+      type: BreakpointType.STANDARD,
+      hitCount: 0,
+    };
+
+    this.breakpoints.set(id, breakpoint);
+    return breakpoint;
+  }
+
+  /**
+   * Create a new logpoint (non-breaking breakpoint)
+   * @param file File path where the logpoint should be set
+   * @param line Line number (1-indexed)
+   * @param logMessage Log message template with variable interpolation
+   * @returns The created logpoint
+   */
+  createLogpoint(file: string, line: number, logMessage: string): Breakpoint {
+    const id = this.generateBreakpointId();
+    const breakpoint: Breakpoint = {
+      id,
+      file,
+      line,
+      enabled: true,
+      type: BreakpointType.LOGPOINT,
+      logMessage,
+      hitCount: 0,
+    };
+
+    this.breakpoints.set(id, breakpoint);
+    return breakpoint;
+  }
+
+  /**
+   * Create a new function breakpoint
+   * @param functionName Function name or regex pattern
+   * @returns The created function breakpoint
+   */
+  createFunctionBreakpoint(functionName: string): Breakpoint {
+    const id = this.generateBreakpointId();
+    const breakpoint: Breakpoint = {
+      id,
+      file: '', // Function breakpoints don't have a specific file
+      line: 0, // Function breakpoints don't have a specific line
+      enabled: true,
+      type: BreakpointType.FUNCTION,
+      functionName,
+      hitCount: 0,
     };
 
     this.breakpoints.set(id, breakpoint);
@@ -164,5 +210,95 @@ export class BreakpointManager {
    */
   hasBreakpoint(id: string): boolean {
     return this.breakpoints.has(id);
+  }
+
+  /**
+   * Increment the hit count for a breakpoint
+   * @param id Breakpoint identifier
+   * @returns The updated hit count or undefined if breakpoint not found
+   */
+  incrementHitCount(id: string): number | undefined {
+    const breakpoint = this.breakpoints.get(id);
+    if (!breakpoint) {
+      return undefined;
+    }
+
+    breakpoint.hitCount = (breakpoint.hitCount || 0) + 1;
+    return breakpoint.hitCount;
+  }
+
+  /**
+   * Reset the hit count for a breakpoint
+   * @param id Breakpoint identifier
+   * @returns True if the breakpoint was found
+   */
+  resetHitCount(id: string): boolean {
+    const breakpoint = this.breakpoints.get(id);
+    if (!breakpoint) {
+      return false;
+    }
+
+    breakpoint.hitCount = 0;
+    return true;
+  }
+
+  /**
+   * Reset all hit counts (typically called on session restart)
+   */
+  resetAllHitCounts(): void {
+    for (const breakpoint of this.breakpoints.values()) {
+      breakpoint.hitCount = 0;
+    }
+  }
+
+  /**
+   * Check if a breakpoint should pause based on hit count condition
+   * @param id Breakpoint identifier
+   * @returns True if the breakpoint should pause
+   */
+  shouldPauseOnHitCount(id: string): boolean {
+    const breakpoint = this.breakpoints.get(id);
+    if (!breakpoint || !breakpoint.hitCountCondition) {
+      return true; // No hit count condition, always pause
+    }
+
+    const hitCount = breakpoint.hitCount || 0;
+    const { operator, value } = breakpoint.hitCountCondition;
+
+    switch (operator) {
+      case '==':
+        return hitCount === value;
+      case '>':
+        return hitCount > value;
+      case '>=':
+        return hitCount >= value;
+      case '<':
+        return hitCount < value;
+      case '<=':
+        return hitCount <= value;
+      case '%':
+        return hitCount % value === 0;
+      default:
+        return true;
+    }
+  }
+
+  /**
+   * Set hit count condition for a breakpoint
+   * @param id Breakpoint identifier
+   * @param condition Hit count condition
+   * @returns The updated breakpoint or undefined if not found
+   */
+  setHitCountCondition(
+    id: string,
+    condition: HitCountCondition,
+  ): Breakpoint | undefined {
+    const breakpoint = this.breakpoints.get(id);
+    if (!breakpoint) {
+      return undefined;
+    }
+
+    breakpoint.hitCountCondition = condition;
+    return breakpoint;
   }
 }

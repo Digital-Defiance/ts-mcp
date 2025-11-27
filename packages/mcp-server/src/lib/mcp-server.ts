@@ -61,6 +61,11 @@ export class McpDebuggerServer {
     this.registerDebuggerInspect();
     this.registerDebuggerGetStack();
     this.registerDebuggerDetectHang();
+    // Advanced breakpoint types
+    this.registerDebuggerSetLogpoint();
+    this.registerDebuggerSetExceptionBreakpoint();
+    this.registerDebuggerSetFunctionBreakpoint();
+    this.registerDebuggerSetHitCountCondition();
   }
 
   /**
@@ -2090,6 +2095,395 @@ export class McpDebuggerServer {
                   {
                     status: 'error',
                     code: 'STOP_SESSION_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_set_logpoint
+   * Set a logpoint (non-breaking breakpoint) in the debug session
+   */
+  private registerDebuggerSetLogpoint(): void {
+    this.server.registerTool(
+      'debugger_set_logpoint',
+      {
+        description:
+          'Set a logpoint that logs a message without pausing execution. Use {variable} syntax for interpolation.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+          file: z.string().describe('The file path (absolute or relative)'),
+          line: z.number().describe('The line number (1-indexed)'),
+          logMessage: z
+            .string()
+            .describe(
+              'Log message template with {variable} interpolation (e.g., "Value is {x}")',
+            ),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          const logpoint = await session.setLogpoint(
+            args.file,
+            args.line,
+            args.logMessage,
+          );
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    logpointId: logpoint.id,
+                    file: logpoint.file,
+                    line: logpoint.line,
+                    logMessage: logpoint.logMessage,
+                    enabled: logpoint.enabled,
+                    verified: !!logpoint.cdpBreakpointId,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'LOGPOINT_SET_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_set_exception_breakpoint
+   * Set an exception breakpoint to pause on caught/uncaught exceptions
+   */
+  private registerDebuggerSetExceptionBreakpoint(): void {
+    this.server.registerTool(
+      'debugger_set_exception_breakpoint',
+      {
+        description:
+          'Set an exception breakpoint to pause on caught and/or uncaught exceptions.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+          breakOnCaught: z
+            .boolean()
+            .describe('Whether to break on caught exceptions'),
+          breakOnUncaught: z
+            .boolean()
+            .describe('Whether to break on uncaught exceptions'),
+          exceptionFilter: z
+            .string()
+            .optional()
+            .describe(
+              'Optional regex pattern to filter exceptions by type/message',
+            ),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          const exceptionBreakpoint = await session.setExceptionBreakpoint(
+            args.breakOnCaught,
+            args.breakOnUncaught,
+            args.exceptionFilter,
+          );
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    exceptionBreakpointId: exceptionBreakpoint.id,
+                    breakOnCaught: exceptionBreakpoint.breakOnCaught,
+                    breakOnUncaught: exceptionBreakpoint.breakOnUncaught,
+                    exceptionFilter: exceptionBreakpoint.exceptionFilter,
+                    enabled: exceptionBreakpoint.enabled,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'EXCEPTION_BREAKPOINT_SET_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_set_function_breakpoint
+   * Set a function breakpoint to pause when a function is called
+   */
+  private registerDebuggerSetFunctionBreakpoint(): void {
+    this.server.registerTool(
+      'debugger_set_function_breakpoint',
+      {
+        description:
+          'Set a function breakpoint to pause when a function with the given name is called.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+          functionName: z
+            .string()
+            .describe('Function name or regex pattern to match'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          const functionBreakpoint = await session.setFunctionBreakpoint(
+            args.functionName,
+          );
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    functionBreakpointId: functionBreakpoint.id,
+                    functionName: functionBreakpoint.functionName,
+                    enabled: functionBreakpoint.enabled,
+                    verified: !!functionBreakpoint.cdpBreakpointId,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'FUNCTION_BREAKPOINT_SET_FAILED',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      },
+    );
+  }
+
+  /**
+   * Tool: debugger_set_hit_count_condition
+   * Set a hit count condition for an existing breakpoint
+   */
+  private registerDebuggerSetHitCountCondition(): void {
+    this.server.registerTool(
+      'debugger_set_hit_count_condition',
+      {
+        description:
+          'Set a hit count condition for a breakpoint. The breakpoint will only pause when the condition is met.',
+        inputSchema: {
+          sessionId: z.string().describe('The debug session ID'),
+          breakpointId: z.string().describe('The breakpoint ID'),
+          operator: z
+            .enum(['==', '>', '>=', '<', '<=', '%'])
+            .describe('Hit count operator (==, >, >=, <, <=, % for modulo)'),
+          value: z.number().describe('Hit count value to compare against'),
+        },
+      },
+      async (args) => {
+        try {
+          const session = this.sessionManager.getSession(args.sessionId);
+          if (!session) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'SESSION_NOT_FOUND',
+                      message: `Session ${args.sessionId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          const breakpoint = session.setBreakpointHitCountCondition(
+            args.breakpointId,
+            {
+              operator: args.operator as any,
+              value: args.value,
+            },
+          );
+
+          if (!breakpoint) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      status: 'error',
+                      code: 'BREAKPOINT_NOT_FOUND',
+                      message: `Breakpoint ${args.breakpointId} not found`,
+                    },
+                    null,
+                    2,
+                  ),
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'success',
+                    breakpointId: breakpoint.id,
+                    hitCountCondition: breakpoint.hitCountCondition,
+                    currentHitCount: breakpoint.hitCount,
+                  },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    status: 'error',
+                    code: 'HIT_COUNT_CONDITION_SET_FAILED',
                     message:
                       error instanceof Error ? error.message : String(error),
                   },
