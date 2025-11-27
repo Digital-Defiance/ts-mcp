@@ -8,3 +8,4 @@ export * from './lib/cdp-breakpoint-operations';
 export * from './lib/variable-inspector';
 export * from './lib/hang-detector';
 export * from './lib/source-map-manager';
+export * from './lib/test-runner';

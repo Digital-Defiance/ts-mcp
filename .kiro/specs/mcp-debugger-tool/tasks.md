@@ -224,31 +224,31 @@
     - **Property 16: Source map variable name preservation**
     - **Validates: Requirements 7.4**
 
-- [ ] 11. Implement test framework integration
-  - [ ] 11.1 Implement Jest test execution
+- [x] 11. Implement test framework integration
+  - [x] 11.1 Implement Jest test execution
     - Spawn Jest with inspector attached
     - Capture test output (stdout/stderr)
     - Parse test results and failures
     - Return structured test results
     - _Requirements: 6.1, 6.4, 6.5_
 
-  - [ ] 11.2 Implement Mocha test execution
+  - [x] 11.2 Implement Mocha test execution
     - Spawn Mocha with inspector attached
     - Capture test output
     - Parse test results
     - _Requirements: 6.2, 6.4, 6.5_
 
-  - [ ] 11.3 Implement Vitest test execution
+  - [x] 11.3 Implement Vitest test execution
     - Spawn Vitest with inspector attached
     - Capture test output
     - Parse test results
     - _Requirements: 6.3, 6.4, 6.5_
 
-  - [ ] 11.4 Write property test for test output capture
+  - [x] 11.4 Write property test for test output capture
     - **Property 13: Test output capture completeness**
     - **Validates: Requirements 6.4**
 
-  - [ ] 11.5 Write property test for test failure information
+  - [x] 11.5 Write property test for test failure information
     - **Property 14: Test failure information completeness**
     - **Validates: Requirements 6.5**
 
@@ -664,29 +664,6 @@
   - Validate production readiness
   - Ask the user if questions arise.
 
-## Optional Long-Term Testing
-
-- [ ] 27. Implement soak testing (optional - resource intensive)
-  - [ ] 27.1 Set up long-running test environment
-    - Configure dedicated test infrastructure
-    - Set up monitoring and alerting
-    - Prepare test scenarios
-    - _Requirements: Long-term stability validation_
-
-  - [ ] 27.2 Run continuous operation tests
-    - Run continuous operation for 24+ hours
-    - Monitor for memory leaks
-    - Monitor for resource leaks
-    - Verify stability under sustained load
-    - _Requirements: Long-term stability validation_
-
-  - [ ] 27.3 Analyze and report results
-    - Collect and analyze metrics
-    - Identify any degradation patterns
-    - Document findings and recommendations
-    - _Requirements: Long-term stability validation_
-  - Ask the user if questions arise.
-
 ## Docker MCP Registry and VS Code/Copilot Integration
 
 - [ ] 28. Prepare for Docker MCP Registry contribution
@@ -825,3 +802,25 @@
     - Test common debugging scenarios
     - Document any limitations or issues
     - _Requirements: VS Code/Copilot integration_
+
+## Optional Long-Term Testing
+
+- [ ] 30. Implement soak testing (optional - resource intensive)
+  - [ ] 30.1 Set up long-running test environment
+    - Configure dedicated test infrastructure
+    - Set up monitoring and alerting
+    - Prepare test scenarios
+    - _Requirements: Long-term stability validation_
+
+  - [ ] 30.2 Run continuous operation tests
+    - Run continuous operation for 24+ hours
+    - Monitor for memory leaks
+    - Monitor for resource leaks
+    - Verify stability under sustained load
+    - _Requirements: Long-term stability validation_
+
+  - [ ] 30.3 Analyze and report results
+    - Collect and analyze metrics
+    - Identify any degradation patterns
+    - Document findings and recommendations
+    - _Requirements: Long-term stability validation_
