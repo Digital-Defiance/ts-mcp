@@ -1022,3 +1022,176 @@
     - Identify any degradation patterns
     - Document findings and recommendations
     - _Requirements: Long-term stability validation_
+
+
+## CRITICAL: Test Coverage Improvement (Based on Actual Metrics)
+
+**Current Coverage:** 74.19% lines, 55.30% branches
+**Target Coverage:** 90% lines, 85% branches
+**Status:** ⚠️ NOT ENTERPRISE-READY
+
+- [x] 31. Achieve 90% test coverage (P0 - Critical Priority)
+  - [x] 31.1 Fix cdp-breakpoint-operations.ts coverage (CRITICAL)
+    - **Current:** 15.62% lines, 14.28% branches
+    - **Target:** 90% lines, 85% branches
+    - **Gap:** 54 uncovered lines, 24 uncovered branches
+    - Create comprehensive unit tests for CDP breakpoint operations
+    - Test script parsing and tracking
+    - Test breakpoint resolution and verification
+    - Test conditional breakpoint handling
+    - Test source map integration
+    - Test error handling for CDP errors
+    - _Requirements: Enterprise quality, 1.1, 1.2, 1.4_
+
+  - [x] 31.2 Fix breakpoint-manager.ts branch coverage (CRITICAL)
+    - **Current:** 41.02% lines, 10.34% branches
+    - **Target:** 90% lines, 85% branches
+    - **Gap:** 46 uncovered lines, 26 uncovered branches
+    - Add tests for all conditional branches
+    - Test edge cases (empty lists, invalid IDs, etc.)
+    - Test concurrent breakpoint operations
+    - Test breakpoint state transitions
+    - _Requirements: Enterprise quality, 1.1-1.5_
+
+  - [x] 31.3 Fix cpu-profiler.ts coverage (CRITICAL)
+    - **Current:** 41.23% lines, 23.52% branches
+    - **Target:** 90% lines, 85% branches
+    - **Gap:** 57 uncovered lines, 39 uncovered branches
+    - Create comprehensive unit tests for CPU profiling
+    - Test profile start/stop operations
+    - Test profile data analysis
+    - Test bottleneck detection
+    - Test error handling
+    - _Requirements: Enterprise quality, Performance debugging_
+
+  - [x] 31.4 Fix memory-profiler.ts coverage (CRITICAL)
+    - **Current:** 45.71% lines, 20% branches
+    - **Target:** 90% lines, 85% branches
+    - **Gap:** 57 uncovered lines, 16 uncovered branches
+    - Create comprehensive unit tests for memory profiling
+    - Test heap snapshot operations
+    - Test memory leak detection
+    - Test memory usage analysis
+    - Test error handling
+    - _Requirements: Enterprise quality, Performance debugging_
+
+  - [x] 31.5 Fix performance-timeline.ts coverage (CRITICAL)
+    - **Current:** 46.15% lines, 15.15% branches
+    - **Target:** 90% lines, 85% branches
+    - **Gap:** 49 uncovered lines, 28 uncovered branches
+    - Create comprehensive unit tests for performance timeline
+    - Test event recording
+    - Test performance analysis
+    - Test report generation
+    - Test error handling
+    - _Requirements: Enterprise quality, Performance debugging_
+
+  - [x] 31.6 Fix audit-logger.ts coverage (HIGH PRIORITY)
+    - **Current:** 52.38% lines, 50% branches
+    - **Target:** 90% lines, 85% branches
+    - **Gap:** 10 uncovered lines, 4 uncovered branches
+    - Create comprehensive unit tests for audit logging
+    - Test log entry creation
+    - Test structured logging format
+    - Test log rotation
+    - Test error handling
+    - _Requirements: Enterprise quality, Enterprise security_
+
+- [ ] 32. Improve coverage for moderate-gap modules (P1 - High Priority)
+  - [ ] 32.1 Improve debug-session.ts coverage
+    - **Current:** 62.43% lines, 45.53% branches
+    - **Target:** 90% lines, 85% branches
+    - **Gap:** 142 uncovered lines, 122 uncovered branches
+    - Add 100+ tests for uncovered code paths
+    - Test all lifecycle methods
+    - Test all execution control operations
+    - Test error conditions
+    - Test state transitions
+    - _Requirements: Enterprise quality, 2.1-2.6, 8.2_
+
+  - [ ] 32.2 Improve source-map-manager.ts coverage
+    - **Current:** 54.73% lines, 27.27% branches
+    - **Target:** 90% lines, 85% branches
+    - **Gap:** 43 uncovered lines, 32 uncovered branches
+    - Add branch coverage tests
+    - Test missing source maps
+    - Test invalid source maps
+    - Test edge cases
+    - _Requirements: Enterprise quality, 7.1-7.4_
+
+  - [ ] 32.3 Improve test-runner.ts coverage
+    - **Current:** 63.82% lines, 37.42% branches
+    - **Target:** 90% lines, 85% branches
+    - **Gap:** 68 uncovered lines, 102 uncovered branches
+    - Add branch coverage tests
+    - Test all test framework integrations
+    - Test error conditions
+    - Test output parsing edge cases
+    - _Requirements: Enterprise quality, 6.1-6.5_
+
+  - [ ] 32.4 Improve shutdown-handler.ts coverage
+    - **Current:** 66.07% lines, 47.36% branches
+    - **Target:** 90% lines, 85% branches
+    - **Gap:** 19 uncovered lines, function coverage low
+    - Add function coverage tests
+    - Test all shutdown scenarios
+    - Test cleanup operations
+    - Test error handling
+    - _Requirements: Enterprise quality, Production readiness_
+
+  - [ ] 32.5 Improve variable-inspector.ts coverage
+    - **Current:** 76.36% lines, 60.37% branches
+    - **Target:** 90% lines, 85% branches
+    - **Gap:** 13 uncovered lines, 21 uncovered branches
+    - Add branch coverage tests
+    - Test complex object inspection
+    - Test error conditions
+    - Test edge cases
+    - _Requirements: Enterprise quality, 3.1-3.4_
+
+- [ ] 33. Improve branch coverage across all modules (P2 - Medium Priority)
+  - [ ] 33.1 Improve branch coverage for well-tested modules
+    - session-manager.ts: 60% → 85% branches
+    - session-timeout-manager.ts: 66.66% → 85% branches
+    - health-checker.ts: 68.42% → 85% branches
+    - rate-limiter.ts: 70.27% → 85% branches
+    - hang-detector.ts: 70.83% → 85% branches
+    - resource-limiter.ts: 73.52% → 85% branches
+    - retry-handler.ts: 56.52% → 85% branches
+    - data-masker.ts: 77.27% → 85% branches
+    - Add tests for uncovered conditional branches
+    - Test error paths
+    - Test edge cases
+    - _Requirements: Enterprise quality_
+
+- [ ] 34. Fix test execution issues
+  - [ ] 34.1 Investigate and fix test suite timeout with coverage
+    - Full test suite passes without coverage ✅
+    - Full test suite times out with coverage ❌
+    - Individual tests pass with coverage ✅
+    - Identify hanging tests
+    - Fix resource cleanup issues
+    - Add proper timeouts
+    - _Requirements: Enterprise quality_
+
+  - [ ] 34.2 Optimize test execution for coverage
+    - Run tests in smaller batches
+    - Use --maxWorkers=2 to limit concurrency
+    - Add --forceExit where needed
+    - Increase timeouts for coverage runs
+    - _Requirements: Enterprise quality_
+
+  - [ ] 34.3 Set up CI/CD coverage gates
+    - Configure coverage thresholds (90% lines, 85% branches)
+    - Add coverage reporting to CI
+    - Fail builds that don't meet thresholds
+    - Track coverage trends over time
+    - _Requirements: Enterprise quality_
+
+- [ ] 35. Coverage validation checkpoint
+  - Run full test suite with coverage
+  - Verify 90% line coverage achieved
+  - Verify 85% branch coverage achieved
+  - Generate coverage report
+  - Document any remaining gaps
+  - Ask the user if questions arise.

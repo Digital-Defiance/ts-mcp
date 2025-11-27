@@ -291,4 +291,353 @@ describe('BreakpointManager', () => {
       { numRuns: 100 },
     );
   });
+
+  describe('Logpoint operations', () => {
+    it('should create logpoints with log messages', () => {
+      const logpoint = manager.createLogpoint(
+        '/test/file.js',
+        10,
+        'Value is {x}',
+      );
+
+      expect(logpoint.id).toBeDefined();
+      expect(logpoint.file).toBe('/test/file.js');
+      expect(logpoint.line).toBe(10);
+      expect(logpoint.logMessage).toBe('Value is {x}');
+      expect(logpoint.enabled).toBe(true);
+      expect(logpoint.hitCount).toBe(0);
+    });
+
+    it('should retrieve logpoints', () => {
+      const logpoint = manager.createLogpoint(
+        '/test/file.js',
+        15,
+        'Debug: {msg}',
+      );
+      const retrieved = manager.getBreakpoint(logpoint.id);
+
+      expect(retrieved).toBeDefined();
+      expect(retrieved?.logMessage).toBe('Debug: {msg}');
+    });
+  });
+
+  describe('Function breakpoint operations', () => {
+    it('should create function breakpoints', () => {
+      const funcBp = manager.createFunctionBreakpoint('myFunction');
+
+      expect(funcBp.id).toBeDefined();
+      expect(funcBp.functionName).toBe('myFunction');
+      expect(funcBp.file).toBe('');
+      expect(funcBp.line).toBe(0);
+      expect(funcBp.enabled).toBe(true);
+      expect(funcBp.hitCount).toBe(0);
+    });
+
+    it('should retrieve function breakpoints', () => {
+      const funcBp = manager.createFunctionBreakpoint('testFunc');
+      const retrieved = manager.getBreakpoint(funcBp.id);
+
+      expect(retrieved).toBeDefined();
+      expect(retrieved?.functionName).toBe('testFunc');
+    });
+  });
+
+  describe('addBreakpoint', () => {
+    it('should add an existing breakpoint', () => {
+      const breakpoint = {
+        id: 'custom-bp-1',
+        file: '/test/file.js',
+        line: 20,
+        enabled: true,
+        type: 0,
+        hitCount: 0,
+      };
+
+      manager.addBreakpoint(breakpoint);
+
+      const retrieved = manager.getBreakpoint('custom-bp-1');
+      expect(retrieved).toBeDefined();
+      expect(retrieved?.id).toBe('custom-bp-1');
+      expect(retrieved?.file).toBe('/test/file.js');
+      expect(retrieved?.line).toBe(20);
+    });
+  });
+
+  describe('updateCdpBreakpointId', () => {
+    it('should update CDP breakpoint ID for existing breakpoint', () => {
+      const bp = manager.createBreakpoint('/test/file.js', 25);
+
+      const updated = manager.updateCdpBreakpointId(bp.id, 'cdp-123');
+
+      expect(updated).toBeDefined();
+      expect(updated?.cdpBreakpointId).toBe('cdp-123');
+
+      const retrieved = manager.getBreakpoint(bp.id);
+      expect(retrieved?.cdpBreakpointId).toBe('cdp-123');
+    });
+
+    it('should return undefined for non-existent breakpoint', () => {
+      const updated = manager.updateCdpBreakpointId('non-existent', 'cdp-456');
+      expect(updated).toBeUndefined();
+    });
+  });
+
+  describe('Hit count operations', () => {
+    it('should increment hit count', () => {
+      const bp = manager.createBreakpoint('/test/file.js', 30);
+
+      expect(bp.hitCount).toBe(0);
+
+      const count1 = manager.incrementHitCount(bp.id);
+      expect(count1).toBe(1);
+
+      const count2 = manager.incrementHitCount(bp.id);
+      expect(count2).toBe(2);
+
+      const retrieved = manager.getBreakpoint(bp.id);
+      expect(retrieved?.hitCount).toBe(2);
+    });
+
+    it('should return undefined when incrementing non-existent breakpoint', () => {
+      const count = manager.incrementHitCount('non-existent');
+      expect(count).toBeUndefined();
+    });
+
+    it('should reset hit count', () => {
+      const bp = manager.createBreakpoint('/test/file.js', 35);
+
+      manager.incrementHitCount(bp.id);
+      manager.incrementHitCount(bp.id);
+      manager.incrementHitCount(bp.id);
+
+      expect(manager.getBreakpoint(bp.id)?.hitCount).toBe(3);
+
+      const reset = manager.resetHitCount(bp.id);
+      expect(reset).toBe(true);
+      expect(manager.getBreakpoint(bp.id)?.hitCount).toBe(0);
+    });
+
+    it('should return false when resetting non-existent breakpoint', () => {
+      const reset = manager.resetHitCount('non-existent');
+      expect(reset).toBe(false);
+    });
+
+    it('should reset all hit counts', () => {
+      const bp1 = manager.createBreakpoint('/test/file1.js', 10);
+      const bp2 = manager.createBreakpoint('/test/file2.js', 20);
+      const bp3 = manager.createBreakpoint('/test/file3.js', 30);
+
+      manager.incrementHitCount(bp1.id);
+      manager.incrementHitCount(bp1.id);
+      manager.incrementHitCount(bp2.id);
+      manager.incrementHitCount(bp3.id);
+      manager.incrementHitCount(bp3.id);
+      manager.incrementHitCount(bp3.id);
+
+      expect(manager.getBreakpoint(bp1.id)?.hitCount).toBe(2);
+      expect(manager.getBreakpoint(bp2.id)?.hitCount).toBe(1);
+      expect(manager.getBreakpoint(bp3.id)?.hitCount).toBe(3);
+
+      manager.resetAllHitCounts();
+
+      expect(manager.getBreakpoint(bp1.id)?.hitCount).toBe(0);
+      expect(manager.getBreakpoint(bp2.id)?.hitCount).toBe(0);
+      expect(manager.getBreakpoint(bp3.id)?.hitCount).toBe(0);
+    });
+  });
+
+  describe('Hit count conditions', () => {
+    it('should set hit count condition', () => {
+      const bp = manager.createBreakpoint('/test/file.js', 40);
+
+      const updated = manager.setHitCountCondition(bp.id, {
+        operator: '==',
+        value: 5,
+      });
+
+      expect(updated).toBeDefined();
+      expect(updated?.hitCountCondition).toEqual({
+        operator: '==',
+        value: 5,
+      });
+    });
+
+    it('should return undefined when setting condition on non-existent breakpoint', () => {
+      const updated = manager.setHitCountCondition('non-existent', {
+        operator: '>',
+        value: 10,
+      });
+      expect(updated).toBeUndefined();
+    });
+
+    it('should evaluate == operator correctly', () => {
+      const bp = manager.createBreakpoint('/test/file.js', 45);
+      manager.setHitCountCondition(bp.id, { operator: '==', value: 3 });
+
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(false); // hitCount = 0
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(false); // hitCount = 1
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(false); // hitCount = 2
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(true); // hitCount = 3
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(false); // hitCount = 4
+    });
+
+    it('should evaluate > operator correctly', () => {
+      const bp = manager.createBreakpoint('/test/file.js', 50);
+      manager.setHitCountCondition(bp.id, { operator: '>', value: 2 });
+
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(false); // hitCount = 0
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(false); // hitCount = 1
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(false); // hitCount = 2
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(true); // hitCount = 3
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(true); // hitCount = 4
+    });
+
+    it('should evaluate >= operator correctly', () => {
+      const bp = manager.createBreakpoint('/test/file.js', 55);
+      manager.setHitCountCondition(bp.id, { operator: '>=', value: 2 });
+
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(false); // hitCount = 0
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(false); // hitCount = 1
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(true); // hitCount = 2
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(true); // hitCount = 3
+    });
+
+    it('should evaluate < operator correctly', () => {
+      const bp = manager.createBreakpoint('/test/file.js', 60);
+      manager.setHitCountCondition(bp.id, { operator: '<', value: 3 });
+
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(true); // hitCount = 0
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(true); // hitCount = 1
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(true); // hitCount = 2
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(false); // hitCount = 3
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(false); // hitCount = 4
+    });
+
+    it('should evaluate <= operator correctly', () => {
+      const bp = manager.createBreakpoint('/test/file.js', 65);
+      manager.setHitCountCondition(bp.id, { operator: '<=', value: 2 });
+
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(true); // hitCount = 0
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(true); // hitCount = 1
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(true); // hitCount = 2
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(false); // hitCount = 3
+    });
+
+    it('should evaluate % operator correctly', () => {
+      const bp = manager.createBreakpoint('/test/file.js', 70);
+      manager.setHitCountCondition(bp.id, { operator: '%', value: 3 });
+
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(true); // hitCount = 0 (0 % 3 = 0)
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(false); // hitCount = 1
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(false); // hitCount = 2
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(true); // hitCount = 3 (3 % 3 = 0)
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(false); // hitCount = 4
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(false); // hitCount = 5
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(true); // hitCount = 6 (6 % 3 = 0)
+    });
+
+    it('should return true for breakpoint without hit count condition', () => {
+      const bp = manager.createBreakpoint('/test/file.js', 75);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(true);
+
+      manager.incrementHitCount(bp.id);
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(true);
+    });
+
+    it('should return true for non-existent breakpoint', () => {
+      expect(manager.shouldPauseOnHitCount('non-existent')).toBe(true);
+    });
+
+    it('should return true for unknown operator', () => {
+      const bp = manager.createBreakpoint('/test/file.js', 80);
+      manager.setHitCountCondition(bp.id, {
+        operator: 'unknown' as any,
+        value: 5,
+      });
+
+      expect(manager.shouldPauseOnHitCount(bp.id)).toBe(true);
+    });
+  });
+
+  describe('Edge cases', () => {
+    it('should handle empty breakpoint list', () => {
+      expect(manager.getAllBreakpoints()).toEqual([]);
+      expect(manager.getBreakpointCount()).toBe(0);
+      expect(manager.getBreakpointsByFile('/any/file.js')).toEqual([]);
+    });
+
+    it('should handle non-existent breakpoint operations', () => {
+      expect(manager.getBreakpoint('non-existent')).toBeUndefined();
+      expect(manager.hasBreakpoint('non-existent')).toBe(false);
+      expect(manager.removeBreakpoint('non-existent')).toBe(false);
+      expect(manager.toggleBreakpoint('non-existent')).toBeUndefined();
+      expect(manager.enableBreakpoint('non-existent')).toBeUndefined();
+      expect(manager.disableBreakpoint('non-existent')).toBeUndefined();
+    });
+
+    it('should handle clearAll with empty list', () => {
+      manager.clearAll();
+      expect(manager.getBreakpointCount()).toBe(0);
+    });
+
+    it('should handle clearAll with multiple breakpoints', () => {
+      manager.createBreakpoint('/test/file1.js', 10);
+      manager.createBreakpoint('/test/file2.js', 20);
+      manager.createBreakpoint('/test/file3.js', 30);
+
+      expect(manager.getBreakpointCount()).toBe(3);
+
+      manager.clearAll();
+
+      expect(manager.getBreakpointCount()).toBe(0);
+      expect(manager.getAllBreakpoints()).toEqual([]);
+    });
+
+    it('should handle getBreakpointsByFile with no matches', () => {
+      manager.createBreakpoint('/test/file1.js', 10);
+      manager.createBreakpoint('/test/file2.js', 20);
+
+      const result = manager.getBreakpointsByFile('/test/file3.js');
+      expect(result).toEqual([]);
+    });
+
+    it('should handle getBreakpointsByFile with multiple matches', () => {
+      manager.createBreakpoint('/test/file.js', 10);
+      manager.createBreakpoint('/test/file.js', 20);
+      manager.createBreakpoint('/test/other.js', 30);
+
+      const result = manager.getBreakpointsByFile('/test/file.js');
+      expect(result).toHaveLength(2);
+      expect(result.every((bp) => bp.file === '/test/file.js')).toBe(true);
+    });
+
+    it('should handle resetAllHitCounts with empty list', () => {
+      manager.resetAllHitCounts();
+      expect(manager.getBreakpointCount()).toBe(0);
+    });
+  });
 });
