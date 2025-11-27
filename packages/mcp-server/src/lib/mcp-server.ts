@@ -5,6 +5,7 @@ import {
   SessionManager,
   HangDetector,
   DebugSessionConfig,
+  GracefulShutdownHandler,
 } from '@digitaldefiance/ts-mcp-core';
 
 /**
@@ -16,6 +17,7 @@ export class McpDebuggerServer {
   private server: McpServer;
   private sessionManager: SessionManager;
   private hangDetector: HangDetector;
+  private shutdownHandler: GracefulShutdownHandler;
 
   constructor() {
     this.server = new McpServer(
@@ -32,8 +34,30 @@ export class McpDebuggerServer {
 
     this.sessionManager = new SessionManager();
     this.hangDetector = new HangDetector();
+    this.shutdownHandler = new GracefulShutdownHandler(30000);
 
     this.registerTools();
+    this.setupShutdownHandlers();
+  }
+
+  /**
+   * Setup graceful shutdown handlers
+   */
+  private setupShutdownHandlers(): void {
+    // Register cleanup for session manager
+    this.shutdownHandler.registerCleanup('sessions', async () => {
+      console.log('Cleaning up all debug sessions...');
+      await this.sessionManager.cleanupAll();
+    });
+
+    // Register cleanup for MCP server
+    this.shutdownHandler.registerCleanup('mcp-server', async () => {
+      console.log('Closing MCP server...');
+      await this.server.close();
+    });
+
+    // Initialize signal handlers
+    this.shutdownHandler.initialize();
   }
 
   /**
@@ -2893,8 +2917,14 @@ export class McpDebuggerServer {
    * Stop the MCP server and cleanup all sessions
    */
   async stop(): Promise<void> {
-    await this.sessionManager.cleanupAll();
-    await this.server.close();
+    await this.shutdownHandler.shutdown();
+  }
+
+  /**
+   * Check if server is shutting down
+   */
+  isShuttingDown(): boolean {
+    return this.shutdownHandler.isShuttingDown();
   }
 }
 

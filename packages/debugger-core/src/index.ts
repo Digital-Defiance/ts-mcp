@@ -21,3 +21,8 @@ export * from './lib/session-recorder';
 export * from './lib/cpu-profiler';
 export * from './lib/memory-profiler';
 export * from './lib/performance-timeline';
+export * from './lib/shutdown-handler';
+export * from './lib/circuit-breaker';
+export * from './lib/retry-handler';
+export * from './lib/resource-limiter';
+export * from './lib/prometheus-exporter';
