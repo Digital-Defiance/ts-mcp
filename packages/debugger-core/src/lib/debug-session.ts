@@ -84,6 +84,8 @@ export class DebugSession {
   private config: DebugSessionConfig;
   private currentCallFrames: any[] = [];
   private currentFrameIndex: number = 0;
+  private crashHandlers: Array<(error: Error) => void> = [];
+  private crashError?: Error;
 
   constructor(id: string, config: DebugSessionConfig) {
     this.id = id;
@@ -125,11 +127,7 @@ export class DebugSession {
       await this.inspector.send('Debugger.enable');
       await this.inspector.send('Runtime.enable');
 
-      // Tell the runtime to run if it's waiting for debugger
-      // This is needed when using --inspect-brk
-      await this.inspector.send('Runtime.runIfWaitingForDebugger');
-
-      // Set up event handlers
+      // Set up event handlers BEFORE calling runIfWaitingForDebugger
       this.inspector.on('Debugger.paused', async (params: any) => {
         this.state = SessionState.PAUSED;
         this.currentCallFrames = params?.callFrames || [];
@@ -153,12 +151,21 @@ export class DebugSession {
       });
 
       // Handle process exit
-      this.process.on('exit', () => {
-        this.state = SessionState.TERMINATED;
+      this.process.on('exit', (code: number | null, signal: string | null) => {
+        this.handleProcessExit(code, signal);
       });
 
+      // Handle process errors
+      this.process.on('error', (error: Error) => {
+        this.handleProcessError(error);
+      });
+
+      // Tell the runtime to run if it's waiting for debugger
+      // This will trigger a Debugger.paused event at the first line
+      await this.inspector.send('Runtime.runIfWaitingForDebugger');
+
       // Wait for the initial pause from --inspect-brk
-      // The process should already be paused, but we need to wait for the event
+      // The process should pause at the first line after runIfWaitingForDebugger
       await new Promise<void>((resolve) => {
         const timeout = setTimeout(() => {
           // If we don't get a paused event within 1 second, assume we're paused
@@ -807,5 +814,101 @@ export class DebugSession {
    */
   async mapCompiledToSource(file: string, line: number, column: number = 0) {
     return this.sourceMapManager.mapCompiledToSource({ file, line, column });
+  }
+
+  /**
+   * Handle process exit event
+   * Detects unexpected terminations and cleans up resources
+   * Requirements: 8.1
+   */
+  private handleProcessExit(code: number | null, signal: string | null): void {
+    const wasActive = this.state !== SessionState.TERMINATED;
+
+    // Only process if we haven't already handled this exit
+    if (!wasActive) {
+      return;
+    }
+
+    this.state = SessionState.TERMINATED;
+
+    // If the process exited unexpectedly (non-zero exit code or killed by signal)
+    // this is a crash
+    if (code !== 0 || signal !== null) {
+      const error = new Error(
+        `Process crashed with ${signal ? `signal ${signal}` : `exit code ${code}`}`,
+      );
+      this.crashError = error;
+
+      // Call all registered crash handlers
+      for (const handler of this.crashHandlers) {
+        try {
+          handler(error);
+        } catch (handlerError) {
+          // Ignore errors in crash handlers
+        }
+      }
+
+      // Trigger cleanup asynchronously
+      this.cleanup().catch(() => {
+        // Ignore cleanup errors during crash handling
+      });
+    } else {
+      // Normal exit (code 0), still clean up
+      this.cleanup().catch(() => {
+        // Ignore cleanup errors
+      });
+    }
+  }
+
+  /**
+   * Handle process error event
+   * Detects spawn errors and other process-level errors
+   * Requirements: 8.1
+   */
+  private handleProcessError(error: Error): void {
+    this.state = SessionState.TERMINATED;
+    this.crashError = error;
+
+    // Call all registered crash handlers
+    for (const handler of this.crashHandlers) {
+      try {
+        handler(error);
+      } catch (handlerError) {
+        // Ignore errors in crash handlers
+      }
+    }
+
+    // Trigger cleanup asynchronously
+    this.cleanup().catch(() => {
+      // Ignore cleanup errors during crash handling
+    });
+  }
+
+  /**
+   * Register a crash handler callback
+   * The handler will be called when the process crashes or terminates unexpectedly
+   * Multiple handlers can be registered and all will be called
+   * Requirements: 8.1
+   */
+  onCrash(handler: (error: Error) => void): void {
+    this.crashHandlers.push(handler);
+  }
+
+  /**
+   * Get the crash error if the process crashed
+   * Returns undefined if the process terminated normally
+   * Requirements: 8.1
+   */
+  getCrashError(): Error | undefined {
+    return this.crashError;
+  }
+
+  /**
+   * Check if the process crashed
+   * Returns true if the process terminated unexpectedly
+   * Requirements: 8.1
+   */
+  hasCrashed(): boolean {
+    return this.crashError !== undefined;
   }
 }

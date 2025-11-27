@@ -252,75 +252,75 @@
     - **Property 14: Test failure information completeness**
     - **Validates: Requirements 6.5**
 
-- [ ] 12. Implement MCP tools
-  - [ ] 12.1 Implement debugger_start tool
+- [x] 12. Implement MCP tools
+  - [x] 12.1 Implement debugger_start tool
     - Accept command, args, cwd, and timeout parameters
     - Create new debug session
     - Start process with inspector
     - Return session ID and status
     - _Requirements: 2.1, 9.1_
 
-  - [ ] 12.2 Implement debugger_set_breakpoint tool
+  - [x] 12.2 Implement debugger_set_breakpoint tool
     - Accept file, line, and optional condition
     - Validate file path
     - Create breakpoint via BreakpointManager
     - Return breakpoint ID and verification status
     - _Requirements: 1.1, 1.2, 9.1_
 
-  - [ ] 12.3 Implement debugger_continue tool
+  - [x] 12.3 Implement debugger_continue tool
     - Accept session ID
     - Resume execution in session
     - Return execution status
     - _Requirements: 2.2, 9.1_
 
-  - [ ] 12.4 Implement debugger_step_over tool
+  - [x] 12.4 Implement debugger_step_over tool
     - Accept session ID
     - Execute step over operation
     - Return new execution location
     - _Requirements: 2.3, 9.1_
 
-  - [ ] 12.5 Implement debugger_inspect tool
+  - [x] 12.5 Implement debugger_inspect tool
     - Accept session ID and expression
     - Evaluate expression in current context
     - Return value with type information
     - _Requirements: 3.4, 9.1, 9.3_
 
-  - [ ] 12.6 Implement debugger_get_stack tool
+  - [x] 12.6 Implement debugger_get_stack tool
     - Accept session ID
     - Return current call stack
     - Include absolute file paths
     - _Requirements: 4.1, 9.1, 9.4_
 
-  - [ ] 12.7 Implement debugger_detect_hang tool
+  - [x] 12.7 Implement debugger_detect_hang tool
     - Accept command, args, timeout, and sample interval
     - Run hang detection
     - Return hang status, location, and stack if hung
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 9.1_
 
-  - [ ] 12.8 Write property test for response format consistency
+  - [x] 12.8 Write property test for response format consistency
     - **Property 20: Response format consistency**
     - **Validates: Requirements 9.1, 9.2**
 
-- [ ] 13. Implement error handling and cleanup
-  - [ ] 13.1 Implement crash detection
+- [-] 13. Implement error handling and cleanup
+  - [x] 13.1 Implement crash detection
     - Listen for process exit events
     - Detect unexpected terminations
     - Clean up session resources on crash
     - Report crash with error details
     - _Requirements: 8.1_
 
-  - [ ] 13.2 Write property test for crash detection and cleanup
+  - [x] 13.2 Write property test for crash detection and cleanup
     - **Property 17: Crash detection and cleanup**
     - **Validates: Requirements 8.1, 8.2**
 
-  - [ ] 13.3 Implement session cleanup
+  - [x] 13.3 Implement session cleanup
     - Remove all breakpoints on session end
     - Disconnect inspector client
     - Kill process if still running
     - Release all resources
     - _Requirements: 8.2_
 
-  - [ ] 13.4 Implement error response formatting
+  - [-] 13.4 Implement error response formatting
     - Create error response structure with code, message, and context
     - Handle CDP errors and convert to user-friendly messages
     - Ensure errors don't crash the MCP server
@@ -344,6 +344,71 @@
     - Clean up all sessions on shutdown
     - Add logging for debugging
     - _Requirements: 8.2_
+
+  - [ ] 14.4 Implement MCP protocol E2E tests
+    - [ ] 14.4.1 Create E2E test suite
+      - Set up test infrastructure to spawn MCP server as child process
+      - Implement JSON-RPC communication over stdio
+      - Create helper functions for sending requests and receiving responses
+      - Add timeout handling for test requests
+      - _Requirements: 9.1, 9.2_
+
+    - [ ] 14.4.2 Test MCP protocol initialization
+      - Test initialize request with protocol version and capabilities
+      - Verify server responds with correct server info and capabilities
+      - Test initialized notification
+      - Verify tools capability is advertised
+      - _Requirements: 9.1_
+
+    - [ ] 14.4.3 Test tool discovery
+      - Test tools/list request
+      - Verify all 7 tools are returned (debugger_start, debugger_set_breakpoint, etc.)
+      - Verify each tool has name, description, and inputSchema
+      - Test tool schema validation
+      - _Requirements: 9.1_
+
+    - [ ] 14.4.4 Test tool execution - debugger_detect_hang
+      - Test hang detection with infinite loop fixture
+      - Test hang detection with normal completion fixture
+      - Verify response format matches specification
+      - Test timeout and sample interval parameters
+      - _Requirements: 5.1, 5.2, 5.3, 5.4, 9.1_
+
+    - [ ] 14.4.5 Test tool execution - debugger_start
+      - Test starting debug session with valid parameters
+      - Verify session ID is returned
+      - Verify process is paused at start
+      - Test with different command and args combinations
+      - _Requirements: 2.1, 9.1_
+
+    - [ ] 14.4.6 Test tool execution - session operations
+      - Test debugger_set_breakpoint with valid session
+      - Test debugger_continue with valid session
+      - Test debugger_step_over with valid session
+      - Test debugger_inspect with valid session
+      - Test debugger_get_stack with valid session
+      - _Requirements: 1.1, 2.2, 2.3, 3.4, 4.1, 9.1_
+
+    - [ ] 14.4.7 Test error handling
+      - Test invalid session ID returns proper error
+      - Test missing required parameters returns error
+      - Test invalid tool name returns error
+      - Verify all errors have status, code, and message fields
+      - _Requirements: 9.2_
+
+    - [ ] 14.4.8 Create manual testing script
+      - Create interactive test script with colored output
+      - Test all major MCP operations
+      - Provide clear pass/fail indicators
+      - Add usage instructions and documentation
+      - _Requirements: 9.1, 9.2_
+
+    - [ ] 14.4.9 Create E2E testing documentation
+      - Document how to run E2E tests
+      - Provide instructions for manual testing
+      - Document MCP Inspector usage
+      - Add troubleshooting guide for E2E test failures
+      - _Requirements: 9.2_
 
 - [ ] 15. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.

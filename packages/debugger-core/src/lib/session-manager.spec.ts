@@ -248,4 +248,80 @@ describe('SessionManager', () => {
     manager.pruneTerminatedSessions();
     expect(manager.getSessionCount()).toBe(0);
   }, 10000);
+
+  // Feature: mcp-debugger-tool, Property 17: Crash detection and cleanup
+  // For any Debug Session, if the Target Process crashes or terminates unexpectedly,
+  // then the MCP Server should detect the termination, clean up all debugging resources,
+  // and report the error without leaving orphaned resources.
+  // Validates: Requirements 8.1, 8.2
+  it('should detect crashes and clean up resources', async () => {
+    const testScript = path.join(
+      __dirname,
+      '../../test-fixtures/simple-script.js',
+    );
+
+    // Track if crash handler was called
+    let crashDetected = false;
+    let crashError: Error | undefined;
+
+    const session = await manager.createSession({
+      command: 'node',
+      args: [testScript],
+    });
+
+    const sessionId = session.id;
+
+    // Register crash handler immediately after session creation
+    const crashDetectedPromise = new Promise<void>((resolve) => {
+      session.onCrash((error: Error) => {
+        crashDetected = true;
+        crashError = error;
+        resolve();
+      });
+    });
+
+    const proc = session.getProcess();
+    if (proc) {
+      // Kill the process with SIGKILL to simulate a crash
+      proc.kill('SIGKILL');
+    }
+
+    // Wait for crash to be detected (with timeout)
+    await Promise.race([
+      crashDetectedPromise,
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Crash not detected within timeout')),
+          2000,
+        ),
+      ),
+    ]);
+
+    // Give a bit of time for all cleanup to complete
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Verify crash was detected
+    expect(crashDetected).toBe(true);
+    expect(crashError).toBeDefined();
+    expect(session.hasCrashed()).toBe(true);
+    expect(session.getCrashError()).toBeDefined();
+
+    // Verify session is terminated
+    expect(session.isActive()).toBe(false);
+
+    // Verify inspector is disconnected
+    const inspector = session.getInspector();
+    if (inspector) {
+      expect(inspector.isConnected()).toBe(false);
+    }
+
+    // Verify process is no longer running
+    const process = session.getProcess();
+    if (process) {
+      expect(process.killed || process.exitCode !== null).toBe(true);
+    }
+
+    // Session should be automatically removed from manager after crash
+    expect(manager.hasSession(sessionId)).toBe(false);
+  }, 10000);
 });

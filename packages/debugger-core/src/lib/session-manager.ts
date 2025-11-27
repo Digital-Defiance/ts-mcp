@@ -27,6 +27,12 @@ export class SessionManager {
     // Store session before starting to ensure it's tracked
     this.sessions.set(sessionId, session);
 
+    // Register crash handler to automatically clean up crashed sessions
+    session.onCrash((error: Error) => {
+      // Session will clean itself up, we just need to remove it from tracking
+      this.sessions.delete(sessionId);
+    });
+
     try {
       await session.start();
       return session;

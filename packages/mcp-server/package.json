@@ -20,6 +20,7 @@
   "dependencies": {
     "@digitaldefiance/ts-mcp-core": "workspace:^",
     "@modelcontextprotocol/sdk": "^1.23.0",
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.0",
+    "zod": "^4.1.13"
   }
 }
