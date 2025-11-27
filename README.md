@@ -93,7 +93,7 @@ MCP server implementation that exposes debugging tools to AI agents.
 ### 🎯 Progress Summary
 **Core Implementation: 100% Complete (20/20 core tasks)**
 **Enterprise Features: 100% Complete (5/5 enterprise tasks)**
-**Test Coverage: 80% Complete (Critical modules: 4/6 at 90%+, WebSocket mocking in progress)**
+**Test Coverage: 67% Complete (High-priority modules: 4/6 at 90%+, WebSocket mocking infrastructure complete)**
 **Overall Progress: 85% Complete (25.5/30 total tasks)**
 
 - Inspector Protocol ✅
@@ -247,20 +247,20 @@ See [tasks.md](.kiro/specs/mcp-debugger-tool/tasks.md) for detailed task breakdo
 ### Test Coverage Status 🔄
 **Current Coverage Progress (Task 36.4):**
 - **Overall Target**: 90% lines, 85% branches for enterprise readiness
-- **Critical Modules Progress**:
+- **High-Priority Modules Progress**:
   - ✅ `audit-logger.ts`: 52.38% → **100%** (COMPLETE)
   - ✅ `source-map-manager.ts`: 54.73% → **95.78%** (COMPLETE)
   - ⚠️ `shutdown-handler.ts`: 66.07% → **83.92%** (needs 6% more)
   - ⚠️ `test-runner.ts`: 63.82% → **74.47%** (needs 15% more)
-  - 🔄 `variable-inspector.ts`: WebSocket mocking infrastructure added
-  - 🔄 `debug-session.ts`: WebSocket mocking infrastructure added
+  - ❌ `variable-inspector.ts`: 76.36% → **5.45%** (WebSocket mocking issues)
+  - ❌ `debug-session.ts`: 62.43% → **21.1%** (WebSocket mocking issues)
 
 **Infrastructure Achievements:**
 - ✅ All critical modules (Tasks 31.1-31.6) at 90%+ coverage
 - ✅ Fixed test execution timeout issues with batched execution
 - ✅ Added mock-socket library for WebSocket testing
-- ✅ Comprehensive test fixtures and enterprise testing suite
-- 🔄 WebSocket mocking for CDP-based modules in progress
+- ✅ WebSocket mocking infrastructure (Task 36.4.1) completed
+- 🔄 Variable inspector and debug session coverage in progress (Tasks 36.4.2-36.4.4)
 
 **Comprehensive test coverage includes:**
 - Breakpoint CRUD operations and state management
@@ -391,8 +391,10 @@ npx nx build debugger-core --watch
 ### Milestone 7: Test Coverage Excellence 🔄 **IN PROGRESS**
 - [x] Critical modules coverage (Tasks 31.1-31.6) - 100% complete
 - [x] High-priority modules coverage (Task 36.4) - 67% complete (4/6 modules)
-- [x] WebSocket mocking infrastructure
-- [ ] Complete variable-inspector and debug-session coverage
+- [x] WebSocket mocking infrastructure (Task 36.4.1) - Complete
+- [ ] Variable inspector coverage (Task 36.4.2) - WebSocket mocking issues
+- [ ] Debug session coverage (Task 36.4.3) - WebSocket mocking issues
+- [ ] Complete remaining coverage gaps (Task 36.4.4)
 - [ ] Achieve enterprise-grade 90%+ coverage target
 
 ### Milestone 8: Developer Experience ⏳ **NEXT**

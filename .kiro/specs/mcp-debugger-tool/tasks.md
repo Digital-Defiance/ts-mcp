@@ -1242,7 +1242,7 @@
     - **Remaining Work:** See sub-tasks 36.4.1-36.4.4 below
     - _Requirements: Enterprise quality, 2.1-2.6, 3.1-3.4, 6.1-6.5, 7.1-7.4, 8.2_
   
-  - [ ] 36.4.1 Implement WebSocket mocking for inspector-based tests
+  - [x] 36.4.1 Implement WebSocket mocking for inspector-based tests
     - Create mock WebSocket server using mock-socket library
     - Mock CDP (Chrome DevTools Protocol) message responses
     - Update inspector-client tests to use mocked WebSocket
@@ -1250,7 +1250,7 @@
     - Test connection, disconnection, and error scenarios
     - _Requirements: Enterprise quality, 2.1_
   
-  - [ ] 36.4.2 Fix variable-inspector.ts coverage (5.45% → 90%)
+  - [-] 36.4.2 Fix variable-inspector.ts coverage (5.45% → 90%)
     - Refactor variable-inspector.spec.ts to use WebSocket mocks
     - Test evaluateExpression with various expression types
     - Test getObjectProperties with nested objects
