@@ -1,0 +1,45 @@
+# Source files
+src/
+*.ts
+!*.d.ts
+
+# Development files
+.nx/
+.vscode/
+.kiro/
+*.spec.ts
+*.test.ts
+test/
+tests/
+__tests__/
+
+# Build artifacts
+*.tsbuildinfo
+tsconfig.json
+jest.config.js
+.eslintrc.js
+
+# Documentation (except README)
+docs/
+*.md
+!README.md
+
+# Git and CI
+.git/
+.github/
+.gitignore
+
+# Node modules and logs
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Coverage and testing
+coverage/
+.nyc_output/
+.coverage/
+
+# Environment files
+.env*
+!.env.example

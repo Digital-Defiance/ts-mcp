@@ -1,0 +1,66 @@
+name: Publish to NPM
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: |
+          npm install -g yarn
+          yarn install --frozen-lockfile
+
+      - name: Build packages
+        run: |
+          npx nx build debugger-core
+          npx nx build mcp-server
+
+      - name: Update version (if manual)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          cd packages/mcp-server
+          npm version ${{ github.event.inputs.version }} --no-git-tag-version
+
+      - name: Publish to NPM
+        run: |
+          cd packages/mcp-server
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub release (if manual)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          release_name: Release v${{ github.event.inputs.version }}
+          body: |
+            ## Changes
+            - Published @digitaldefiance/ts-mcp-server v${{ github.event.inputs.version }} to NPM
+            
+            ## Installation
+            ```bash
+            npm install -g @digitaldefiance/ts-mcp-server
+            ```
+          draft: false
+          prerelease: false

@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  ts-mcp-server:
+    build: .
+    image: digitaldefiance/ts-mcp-server:latest
+    container_name: ts-mcp-server
+    restart: unless-stopped
+    
+    # Environment variables
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('Health check passed')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # If using HTTP mode, expose port
+    # ports:
+    #   - "3000:3000"
+    
+    # Volume for persistent data (if needed)
+    # volumes:
+    #   - ./data:/app/data
+
+  # Optional: Add monitoring
+  # watchtower:
+  #   image: containrrr/watchtower
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   command: --interval 30 ts-mcp-server

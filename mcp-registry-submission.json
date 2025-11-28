@@ -17,15 +17,28 @@
     "breakpoints",
     "profiling",
     "inspector-protocol",
+<<<<<<< Updated upstream
     "development-tools"
   ],
   "installation": {
     "npm": "@digitaldefiance/ts-mcp-server"
+=======
+    "development-tools",
+    "performance",
+    "hang-detection"
+  ],
+  "category": "development-tools",
+  "installation": {
+    "npm": "@digitaldefiance/ts-mcp-server",
+    "docker": "digitaldefiance/ts-mcp-server",
+    "github": "https://github.com/digitaldefiance/ts-mcp/releases"
+>>>>>>> Stashed changes
   },
   "server": {
     "command": "ts-mcp-server",
     "args": []
   },
+<<<<<<< Updated upstream
   "tools": [
     {
       "name": "debugger_start",
@@ -52,10 +65,180 @@
     "Interactive debugging with breakpoints",
     "Variable inspection and expression evaluation",
     "Step-through execution control",
+=======
+  "capabilities": [
+    "Interactive debugging with breakpoints",
+    "Variable inspection and expression evaluation",
+    "Step-through execution control (over, into, out)",
+>>>>>>> Stashed changes
     "Performance profiling (CPU, memory, timeline)",
     "Hang detection and infinite loop detection",
     "TypeScript source map support",
     "Test framework integration (Jest, Mocha, Vitest)",
+<<<<<<< Updated upstream
     "Advanced breakpoint types (logpoints, exception breakpoints)"
   ]
+=======
+    "Advanced breakpoint types (logpoints, exception breakpoints, hit count)",
+    "Multi-session debugging with isolation",
+    "Call stack navigation and frame switching",
+    "Watch expressions with change detection",
+    "Audit logging and session recording"
+  ],
+  "tools": [
+    {
+      "name": "debugger_start",
+      "description": "Start debugging a Node.js/TypeScript process with inspector attachment"
+    },
+    {
+      "name": "debugger_set_breakpoint",
+      "description": "Set breakpoints with optional conditions at specific file locations"
+    },
+    {
+      "name": "debugger_continue",
+      "description": "Continue execution until next breakpoint or completion"
+    },
+    {
+      "name": "debugger_step_over",
+      "description": "Execute next line without entering function calls"
+    },
+    {
+      "name": "debugger_step_into",
+      "description": "Step into function calls for detailed debugging"
+    },
+    {
+      "name": "debugger_step_out",
+      "description": "Step out of current function to calling context"
+    },
+    {
+      "name": "debugger_pause",
+      "description": "Pause execution at current point"
+    },
+    {
+      "name": "debugger_inspect",
+      "description": "Evaluate expressions and inspect variables in current context"
+    },
+    {
+      "name": "debugger_get_local_variables",
+      "description": "Get all local variables in current scope with values and types"
+    },
+    {
+      "name": "debugger_get_global_variables",
+      "description": "Get global variables accessible from current scope"
+    },
+    {
+      "name": "debugger_inspect_object",
+      "description": "Deep inspect object properties with configurable depth limits"
+    },
+    {
+      "name": "debugger_add_watch",
+      "description": "Add expressions to watch list for continuous monitoring"
+    },
+    {
+      "name": "debugger_remove_watch",
+      "description": "Remove expressions from watch list"
+    },
+    {
+      "name": "debugger_get_watches",
+      "description": "Get all watched expressions with current values and change detection"
+    },
+    {
+      "name": "debugger_get_stack",
+      "description": "Get current call stack with absolute file paths and line numbers"
+    },
+    {
+      "name": "debugger_switch_stack_frame",
+      "description": "Switch debugging context to different stack frame"
+    },
+    {
+      "name": "debugger_remove_breakpoint",
+      "description": "Remove breakpoints by ID"
+    },
+    {
+      "name": "debugger_toggle_breakpoint",
+      "description": "Enable or disable breakpoints without removing them"
+    },
+    {
+      "name": "debugger_list_breakpoints",
+      "description": "List all breakpoints with their current state and conditions"
+    },
+    {
+      "name": "debugger_detect_hang",
+      "description": "Run processes and detect infinite loops or hanging execution"
+    },
+    {
+      "name": "debugger_stop_session",
+      "description": "Stop debug session and cleanup all resources"
+    },
+    {
+      "name": "debugger_set_logpoint",
+      "description": "Set non-breaking breakpoints that log messages with variable interpolation"
+    },
+    {
+      "name": "debugger_set_exception_breakpoint",
+      "description": "Break on caught/uncaught exceptions with optional filtering"
+    },
+    {
+      "name": "debugger_set_function_breakpoint",
+      "description": "Break when specific functions are called (supports regex patterns)"
+    },
+    {
+      "name": "debugger_start_cpu_profile",
+      "description": "Start CPU profiling for performance analysis and bottleneck detection"
+    },
+    {
+      "name": "debugger_stop_cpu_profile",
+      "description": "Stop CPU profiling and get flame graph data"
+    },
+    {
+      "name": "debugger_take_heap_snapshot",
+      "description": "Take heap snapshot for memory analysis and leak detection"
+    },
+    {
+      "name": "debugger_get_performance_metrics",
+      "description": "Get performance metrics and timeline data"
+    }
+  ],
+  "examples": [
+    {
+      "title": "Basic Debugging Session",
+      "description": "Start debugging a Node.js application and set breakpoints",
+      "steps": [
+        "debugger_start with command 'node app.js'",
+        "debugger_set_breakpoint at app.js:42",
+        "debugger_continue to run until breakpoint",
+        "debugger_inspect to examine variables",
+        "debugger_step_over to continue line by line"
+      ]
+    },
+    {
+      "title": "Performance Profiling",
+      "description": "Profile CPU performance and detect bottlenecks",
+      "steps": [
+        "debugger_start with your application",
+        "debugger_start_cpu_profile to begin profiling",
+        "debugger_continue to run application",
+        "debugger_stop_cpu_profile to get flame graph data"
+      ]
+    },
+    {
+      "title": "Hang Detection",
+      "description": "Detect infinite loops and hanging processes",
+      "steps": [
+        "debugger_detect_hang with command and timeout",
+        "Automatically detects if process hangs or loops infinitely",
+        "Returns hang location and call stack if detected"
+      ]
+    }
+  ],
+  "requirements": {
+    "node": ">=18.0.0",
+    "platforms": ["linux", "darwin", "win32"]
+  },
+  "documentation": {
+    "readme": "https://github.com/digitaldefiance/ts-mcp/blob/main/README.md",
+    "quickStart": "https://github.com/digitaldefiance/ts-mcp/blob/main/QUICK-START.md",
+    "api": "https://github.com/digitaldefiance/ts-mcp/tree/main/docs"
+  }
+>>>>>>> Stashed changes
 }

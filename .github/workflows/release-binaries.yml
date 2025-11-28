@@ -1,0 +1,125 @@
+name: Build and Release Binaries
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+            ext: ''
+          - os: macos-latest
+            platform: darwin
+            arch: x64
+            ext: ''
+          - os: windows-latest
+            platform: win32
+            arch: x64
+            ext: '.exe'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          npm install -g yarn pkg
+          yarn install --frozen-lockfile
+
+      - name: Build packages
+        run: |
+          npx nx build debugger-core
+          npx nx build mcp-server
+
+      - name: Create standalone executable
+        run: |
+          cd packages/mcp-server
+          pkg . --targets node18-${{ matrix.platform }}-${{ matrix.arch }} --output ../../ts-mcp-server-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.ext }}
+
+      - name: Create installation script (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          cat > install-${{ matrix.platform }}.sh << 'EOF'
+          #!/bin/bash
+          set -e
+          
+          echo "Installing ts-mcp-server for ${{ matrix.platform }}..."
+          
+          # Download binary
+          curl -L -o ts-mcp-server https://github.com/digitaldefiance/ts-mcp/releases/latest/download/ts-mcp-server-${{ matrix.platform }}-${{ matrix.arch }}
+          
+          # Make executable
+          chmod +x ts-mcp-server
+          
+          # Move to PATH
+          sudo mv ts-mcp-server /usr/local/bin/
+          
+          echo "ts-mcp-server installed successfully!"
+          echo "Usage: ts-mcp-server"
+          EOF
+          chmod +x install-${{ matrix.platform }}.sh
+
+      - name: Create installation script (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          @'
+          @echo off
+          echo Installing ts-mcp-server for Windows...
+          
+          REM Download binary
+          powershell -Command "Invoke-WebRequest -Uri 'https://github.com/digitaldefiance/ts-mcp/releases/latest/download/ts-mcp-server-win32-x64.exe' -OutFile 'ts-mcp-server.exe'"
+          
+          REM Move to a directory in PATH (requires admin)
+          echo Please run as administrator to install to Program Files
+          if not exist "C:\Program Files\ts-mcp-server" mkdir "C:\Program Files\ts-mcp-server"
+          move ts-mcp-server.exe "C:\Program Files\ts-mcp-server\"
+          
+          REM Add to PATH (requires admin)
+          setx /M PATH "%PATH%;C:\Program Files\ts-mcp-server"
+          
+          echo ts-mcp-server installed successfully!
+          echo Usage: ts-mcp-server.exe
+          '@ > install-win32.bat
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ts-mcp-server-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            ts-mcp-server-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.ext }}
+            install-${{ matrix.platform }}.*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Upload binaries to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ts-mcp-server-*/ts-mcp-server-*
+            ts-mcp-server-*/install-*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
