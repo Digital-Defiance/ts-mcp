@@ -109,9 +109,7 @@ describe('VariableInspector - Unit Tests', () => {
     });
 
     it('should handle CDP send errors', async () => {
-      mockInspectorClient.send.mockRejectedValue(
-        new Error('Connection lost'),
-      );
+      mockInspectorClient.send.mockRejectedValue(new Error('Connection lost'));
 
       await expect(
         inspector.evaluateExpression('x', 'frame-123'),
@@ -522,7 +520,9 @@ describe('VariableInspector - Unit Tests', () => {
       });
     });
   });
-});
+
+  describe('Error Handling - Additional Coverage', () => {
+    it('should handle non-Error exceptions in evaluateExpression', async () => {
       mockInspectorClient.send.mockRejectedValue('String error');
 
       await expect(inspector.evaluateExpression('x', 'frame-123')).rejects.toBe(

@@ -39,5 +39,13 @@
     "@types/source-map": "^0.5.7",
     "@types/ws": "^8.18.1",
     "mock-socket": "^9.3.1"
+  },
+  "author": "Digital Defiance <info@digitaldefiance.org>, Jessica Mulein <jessica@digitaldefiance.org>",
+  "license": "MIT",
+  "homepage": "https://github.com/digitaldefiance/ts-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/digitaldefiance/ts-mcp.git",
+    "directory": "packages/mcp-server"
   }
 }

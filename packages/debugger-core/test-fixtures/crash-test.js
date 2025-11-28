@@ -1,8 +1,7 @@
-// Test fixture that crashes with an uncaught exception
-// The process will pause at the first line due to --inspect-brk
-// When resumed, it will throw an uncaught exception
 
-console.log('Starting crash test...');
-console.log('About to crash...');
-console.error('CRASH TEST: About to throw exception');
-throw new Error('Intentional crash for testing');
+// Busy wait to give time for handlers to be set up, then crash
+const start = Date.now();
+while (Date.now() - start < 100) {
+  // Busy wait
+}
+throw new Error('Intentional crash');

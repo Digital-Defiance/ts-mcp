@@ -262,8 +262,10 @@ describe('SourceMapManager - Additional Coverage Tests', () => {
         column: 0,
       });
 
-      // Should return null (no source map), but it should have tried to find the file
-      expect(result).toBeNull();
+      // Should find the compiled file even without a source map
+      // (falls back to file pattern matching)
+      expect(result).not.toBeNull();
+      expect(result?.file).toBe(jsFile1);
     });
 
     it('should handle .tsx -> .jsx pattern', async () => {

@@ -2,6 +2,13 @@
   "name": "@digitaldefiance/ts-mcp-source",
   "version": "0.1.0",
   "license": "MIT",
+  "author": "Digital Defiance <info@digitaldefiance.org>, Jessica Mulein <jessica@digitaldefiance.org>",
+  "homepage": "https://github.com/digitaldefiance/ts-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/digitaldefiance/ts-mcp.git",
+    "directory": "packages/mcp-server"
+  },
   "private": true,
   "workspaces": [
     "packages/*"
@@ -9,6 +16,7 @@
   "scripts": {
     "build": "nx run-many --target=build --all",
     "test": "nx run-many --target=test --all",
+    "test:coverage:logged": "npx jest --coverage --config=jest.simple.config.js 2>&1 | ansifilter -o test.log",
     "lint": "nx run-many --target=lint --all",
     "format": "nx format:write",
     "affected:build": "nx affected --target=build",
@@ -35,6 +43,7 @@
     "prettier": "^3.0.0",
     "ts-jest": "29.4.5",
     "ts-node": "^10.9.0",
-    "typescript": "~5.4.0"
+    "typescript": "~5.4.0",
+    "typescript-eslint": "^8.48.0"
   }
 }

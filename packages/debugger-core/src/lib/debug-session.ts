@@ -168,6 +168,36 @@ export class DebugSession {
       throw new Error(`Cannot start session in state: ${this.state}`);
     }
 
+    // Validate file exists if args contain a file path
+    // Skip validation for npx, npm, yarn, etc. as they take package names
+    const skipValidationCommands = ['npx', 'npm', 'yarn', 'pnpm', 'bun'];
+    if (
+      this.config.args &&
+      this.config.args.length > 0 &&
+      !skipValidationCommands.includes(this.config.command)
+    ) {
+      const firstArg = this.config.args[0];
+      // Check if it looks like a file path (not a flag starting with - and has file extension)
+      if (!firstArg.startsWith('-') && /\.(js|ts|mjs|cjs)$/.test(firstArg)) {
+        const fs = await import('fs');
+        const filePath = path.isAbsolute(firstArg)
+          ? firstArg
+          : path.resolve(this.config.cwd || process.cwd(), firstArg);
+
+        if (!fs.existsSync(filePath)) {
+          throw new Error(`File not found: ${filePath}`);
+        }
+      }
+    }
+
+    // Validate working directory exists
+    if (this.config.cwd) {
+      const fs = await import('fs');
+      if (!fs.existsSync(this.config.cwd)) {
+        throw new Error(`Working directory not found: ${this.config.cwd}`);
+      }
+    }
+
     try {
       // Spawn process with inspector
       const { process: proc, wsUrl } = await spawnWithInspector(
@@ -281,9 +311,12 @@ export class DebugSession {
     // This ensures call frames are populated before we return
     await new Promise<void>((resolve) => {
       const timeout = setTimeout(() => {
-        // Timeout - resolve anyway, state should be updated by event handler
+        // Timeout - set state manually if event didn't fire
+        if (this.state === SessionState.RUNNING) {
+          this.state = SessionState.PAUSED;
+        }
         resolve();
-      }, 500);
+      }, 1000); // Increased timeout to 1 second
 
       const handler = () => {
         clearTimeout(timeout);

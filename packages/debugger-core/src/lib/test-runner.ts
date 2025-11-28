@@ -212,27 +212,38 @@ export function parseMochaOutput(
         for (const [name, tests] of suiteMap.entries()) {
           suites.push({ name, tests });
         }
+
+        // Return early if we successfully parsed JSON
+        return {
+          suites,
+          totalTests,
+          passedTests,
+          failedTests,
+          skippedTests,
+        };
       }
     }
   } catch (error) {
-    // Fallback to text parsing
-    const lines = stdout.split('\n');
-
-    for (const line of lines) {
-      if (line.includes('passing')) {
-        const match = line.match(/(\d+) passing/);
-        if (match) passedTests = parseInt(match[1]);
-      } else if (line.includes('failing')) {
-        const match = line.match(/(\d+) failing/);
-        if (match) failedTests = parseInt(match[1]);
-      } else if (line.includes('pending')) {
-        const match = line.match(/(\d+) pending/);
-        if (match) skippedTests = parseInt(match[1]);
-      }
-    }
-
-    totalTests = passedTests + failedTests + skippedTests;
+    // JSON parsing failed, fall through to text parsing
   }
+
+  // Fallback to text parsing (if no JSON or JSON parsing failed)
+  const lines = stdout.split('\n');
+
+  for (const line of lines) {
+    if (line.includes('passing')) {
+      const match = line.match(/(\d+) passing/);
+      if (match) passedTests = parseInt(match[1]);
+    } else if (line.includes('failing')) {
+      const match = line.match(/(\d+) failing/);
+      if (match) failedTests = parseInt(match[1]);
+    } else if (line.includes('pending')) {
+      const match = line.match(/(\d+) pending/);
+      if (match) skippedTests = parseInt(match[1]);
+    }
+  }
+
+  totalTests = passedTests + failedTests + skippedTests;
 
   return {
     suites,

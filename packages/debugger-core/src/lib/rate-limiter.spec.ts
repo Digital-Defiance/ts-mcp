@@ -27,19 +27,19 @@ describe('RateLimiter', () => {
       const limiter = new RateLimiter();
       limiter.setLimit('test_operation', { maxRequests: 3, windowMs: 1000 });
 
-      expect(() => limiter.checkLimit('test_operation', 'user1')).not.toThrow();
-      expect(() => limiter.checkLimit('test_operation', 'user1')).not.toThrow();
-      expect(() => limiter.checkLimit('test_operation', 'user1')).not.toThrow();
+      expect(() => limiter.checkLimitOrThrow('test_operation', 'user1')).not.toThrow();
+      expect(() => limiter.checkLimitOrThrow('test_operation', 'user1')).not.toThrow();
+      expect(() => limiter.checkLimitOrThrow('test_operation', 'user1')).not.toThrow();
     });
 
     it('should throw RateLimitError when limit is exceeded', () => {
       const limiter = new RateLimiter();
       limiter.setLimit('test_operation', { maxRequests: 2, windowMs: 1000 });
 
-      limiter.checkLimit('test_operation', 'user1');
-      limiter.checkLimit('test_operation', 'user1');
+      limiter.checkLimitOrThrow('test_operation', 'user1');
+      limiter.checkLimitOrThrow('test_operation', 'user1');
 
-      expect(() => limiter.checkLimit('test_operation', 'user1')).toThrow(
+      expect(() => limiter.checkLimitOrThrow('test_operation', 'user1')).toThrow(
         RateLimitError,
       );
     });
@@ -48,10 +48,10 @@ describe('RateLimiter', () => {
       const limiter = new RateLimiter();
       limiter.setLimit('test_operation', { maxRequests: 1, windowMs: 5000 });
 
-      limiter.checkLimit('test_operation', 'user1');
+      limiter.checkLimitOrThrow('test_operation', 'user1');
 
       try {
-        limiter.checkLimit('test_operation', 'user1');
+        limiter.checkLimitOrThrow('test_operation', 'user1');
         fail('Should have thrown RateLimitError');
       } catch (error) {
         expect(error).toBeInstanceOf(RateLimitError);
@@ -66,15 +66,15 @@ describe('RateLimiter', () => {
       const limiter = new RateLimiter();
       limiter.setLimit('test_operation', { maxRequests: 2, windowMs: 1000 });
 
-      limiter.checkLimit('test_operation', 'user1');
-      limiter.checkLimit('test_operation', 'user1');
-      limiter.checkLimit('test_operation', 'user2');
-      limiter.checkLimit('test_operation', 'user2');
+      limiter.checkLimitOrThrow('test_operation', 'user1');
+      limiter.checkLimitOrThrow('test_operation', 'user1');
+      limiter.checkLimitOrThrow('test_operation', 'user2');
+      limiter.checkLimitOrThrow('test_operation', 'user2');
 
-      expect(() => limiter.checkLimit('test_operation', 'user1')).toThrow(
+      expect(() => limiter.checkLimitOrThrow('test_operation', 'user1')).toThrow(
         RateLimitError,
       );
-      expect(() => limiter.checkLimit('test_operation', 'user2')).toThrow(
+      expect(() => limiter.checkLimitOrThrow('test_operation', 'user2')).toThrow(
         RateLimitError,
       );
     });
@@ -83,17 +83,17 @@ describe('RateLimiter', () => {
       const limiter = new RateLimiter();
       limiter.setLimit('test_operation', { maxRequests: 2, windowMs: 100 });
 
-      limiter.checkLimit('test_operation', 'user1');
-      limiter.checkLimit('test_operation', 'user1');
+      limiter.checkLimitOrThrow('test_operation', 'user1');
+      limiter.checkLimitOrThrow('test_operation', 'user1');
 
-      expect(() => limiter.checkLimit('test_operation', 'user1')).toThrow(
+      expect(() => limiter.checkLimitOrThrow('test_operation', 'user1')).toThrow(
         RateLimitError,
       );
 
       // Wait for window to reset
       await new Promise((resolve) => setTimeout(resolve, 150));
 
-      expect(() => limiter.checkLimit('test_operation', 'user1')).not.toThrow();
+      expect(() => limiter.checkLimitOrThrow('test_operation', 'user1')).not.toThrow();
     });
 
     it('should allow requests when no limit is configured', () => {
@@ -102,7 +102,7 @@ describe('RateLimiter', () => {
       // No limit configured for this operation
       for (let i = 0; i < 100; i++) {
         expect(() =>
-          limiter.checkLimit('unlimited_operation', 'user1'),
+          limiter.checkLimitOrThrow('unlimited_operation', 'user1'),
         ).not.toThrow();
       }
     });
@@ -113,8 +113,8 @@ describe('RateLimiter', () => {
       const limiter = new RateLimiter();
       limiter.setLimit('test_operation', { maxRequests: 5, windowMs: 1000 });
 
-      limiter.checkLimit('test_operation', 'user1');
-      limiter.checkLimit('test_operation', 'user1');
+      limiter.checkLimitOrThrow('test_operation', 'user1');
+      limiter.checkLimitOrThrow('test_operation', 'user1');
 
       const status = limiter.getStatus('test_operation', 'user1');
       expect(status).not.toBeNull();
@@ -134,11 +134,11 @@ describe('RateLimiter', () => {
       const limiter = new RateLimiter();
       limiter.setLimit('test_operation', { maxRequests: 2, windowMs: 1000 });
 
-      limiter.checkLimit('test_operation', 'user1');
-      limiter.checkLimit('test_operation', 'user1');
+      limiter.checkLimitOrThrow('test_operation', 'user1');
+      limiter.checkLimitOrThrow('test_operation', 'user1');
 
       try {
-        limiter.checkLimit('test_operation', 'user1');
+        limiter.checkLimitOrThrow('test_operation', 'user1');
       } catch (error) {
         // Expected
       }
@@ -156,8 +156,8 @@ describe('RateLimiter', () => {
       limiter.setLimit('operation1', { maxRequests: 10, windowMs: 1000 });
       limiter.setLimit('operation2', { maxRequests: 20, windowMs: 2000 });
 
-      limiter.checkLimit('operation1', 'user1');
-      limiter.checkLimit('operation2', 'user1');
+      limiter.checkLimitOrThrow('operation1', 'user1');
+      limiter.checkLimitOrThrow('operation2', 'user1');
 
       const allMetrics = limiter.getAllMetrics();
       expect(allMetrics).toHaveLength(2);
@@ -171,44 +171,44 @@ describe('RateLimiter', () => {
       const limiter = new RateLimiter();
       limiter.setLimit('test_operation', { maxRequests: 2, windowMs: 1000 });
 
-      limiter.checkLimit('test_operation', 'user1');
-      limiter.checkLimit('test_operation', 'user1');
+      limiter.checkLimitOrThrow('test_operation', 'user1');
+      limiter.checkLimitOrThrow('test_operation', 'user1');
 
-      expect(() => limiter.checkLimit('test_operation', 'user1')).toThrow(
+      expect(() => limiter.checkLimitOrThrow('test_operation', 'user1')).toThrow(
         RateLimitError,
       );
 
       limiter.reset('test_operation', 'user1');
 
-      expect(() => limiter.checkLimit('test_operation', 'user1')).not.toThrow();
+      expect(() => limiter.checkLimitOrThrow('test_operation', 'user1')).not.toThrow();
     });
 
     it('should reset all rate limits for an operation', () => {
       const limiter = new RateLimiter();
       limiter.setLimit('test_operation', { maxRequests: 1, windowMs: 1000 });
 
-      limiter.checkLimit('test_operation', 'user1');
-      limiter.checkLimit('test_operation', 'user2');
+      limiter.checkLimitOrThrow('test_operation', 'user1');
+      limiter.checkLimitOrThrow('test_operation', 'user2');
 
-      expect(() => limiter.checkLimit('test_operation', 'user1')).toThrow(
+      expect(() => limiter.checkLimitOrThrow('test_operation', 'user1')).toThrow(
         RateLimitError,
       );
-      expect(() => limiter.checkLimit('test_operation', 'user2')).toThrow(
+      expect(() => limiter.checkLimitOrThrow('test_operation', 'user2')).toThrow(
         RateLimitError,
       );
 
       limiter.resetAll('test_operation');
 
-      expect(() => limiter.checkLimit('test_operation', 'user1')).not.toThrow();
-      expect(() => limiter.checkLimit('test_operation', 'user2')).not.toThrow();
+      expect(() => limiter.checkLimitOrThrow('test_operation', 'user1')).not.toThrow();
+      expect(() => limiter.checkLimitOrThrow('test_operation', 'user2')).not.toThrow();
     });
 
     it('should cleanup expired entries', async () => {
       const limiter = new RateLimiter();
       limiter.setLimit('test_operation', { maxRequests: 2, windowMs: 100 });
 
-      limiter.checkLimit('test_operation', 'user1');
-      limiter.checkLimit('test_operation', 'user2');
+      limiter.checkLimitOrThrow('test_operation', 'user1');
+      limiter.checkLimitOrThrow('test_operation', 'user2');
 
       // Wait for entries to expire
       await new Promise((resolve) => setTimeout(resolve, 150));
@@ -228,8 +228,8 @@ describe('RateLimiter', () => {
       limiter.setLimit('operation1', { maxRequests: 10, windowMs: 1000 });
       limiter.setLimit('operation2', { maxRequests: 20, windowMs: 2000 });
 
-      limiter.checkLimit('operation1', 'user1');
-      limiter.checkLimit('operation2', 'user1');
+      limiter.checkLimitOrThrow('operation1', 'user1');
+      limiter.checkLimitOrThrow('operation2', 'user1');
 
       expect(limiter.getOperationTypes()).toHaveLength(2);
 
@@ -264,10 +264,10 @@ describe('RateLimiter', () => {
       limiter.setLimit('test_operation', { maxRequests: 2, windowMs: 1000 });
 
       // Use default identifier
-      limiter.checkLimit('test_operation');
-      limiter.checkLimit('test_operation');
+      limiter.checkLimitOrThrow('test_operation');
+      limiter.checkLimitOrThrow('test_operation');
 
-      expect(() => limiter.checkLimit('test_operation')).toThrow(
+      expect(() => limiter.checkLimitOrThrow('test_operation')).toThrow(
         RateLimitError,
       );
 

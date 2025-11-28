@@ -219,15 +219,12 @@ describe('TestRunner', () => {
       const config: TestExecutionConfig = {
         framework: 'jest',
         args: ['--version'],
-        timeout: 1, // Very short timeout
+        timeout: 1, // Very short timeout - should cause timeout
         attachInspector: false,
       };
 
-      const result = await executeTests(config);
-
-      // Should complete even with short timeout
-      expect(result.framework).toBe('jest');
-      expect(result.exitCode).toBeDefined();
+      // With 1ms timeout, the process should timeout
+      await expect(executeTests(config)).rejects.toThrow(/timed out/);
     }, 20000);
 
     it('should handle non-existent test file', async () => {

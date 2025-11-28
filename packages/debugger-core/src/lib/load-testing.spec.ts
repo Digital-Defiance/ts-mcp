@@ -208,9 +208,33 @@ process.exit(0);`,
   });
 
   describe('Performance Bottleneck Identification', () => {
-    it.skip('should measure breakpoint operation latency under load', async () => {
-      // Skipped: breakpointManager is private in DebugSession
-      // This test would require exposing the breakpoint API publicly
+    it('should measure breakpoint operation latency under load', async () => {
+      // Test breakpoint operations through the public API
+      const session = await sessionManager.createSession({
+        command: 'node',
+        args: [testFixturePath],
+        cwd: process.cwd(),
+      });
+
+      const iterations = 10;
+      const latencies: number[] = [];
+
+      for (let i = 0; i < iterations; i++) {
+        const start = Date.now();
+        const bp = await session.setBreakpoint(testFixturePath, 5 + i);
+        const end = Date.now();
+        latencies.push(end - start);
+
+        if (bp) {
+          await session.removeBreakpoint(bp.id);
+        }
+      }
+
+      const avgLatency =
+        latencies.reduce((a, b) => a + b, 0) / latencies.length;
+      expect(avgLatency).toBeLessThan(1000); // Should be under 1 second
+
+      await sessionManager.removeSession(session.id);
     }, 30000);
 
     it('should measure memory usage during concurrent sessions', async () => {
